@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>吉富 DM 雲端正式版</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#f4f1eb;color:#1b1b1b}button,input,select{font:inherit}.top{background:#073966;color:white;padding:24px 32px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.top h1{margin:0;font-size:30px}.top p{margin:8px 0 0;opacity:.82}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav button{border:0;border-radius:12px;padding:11px 16px;font-weight:800;background:rgba(255,255,255,.12);color:white;cursor:pointer}.nav button.active{background:white;color:#073966}.notice{max-width:1320px;margin:18px auto 0;background:#fff6dc;border:1px solid #f1dfae;color:#795000;padding:14px 18px;border-radius:16px}.wrap{max-width:1320px;margin:auto;padding:24px}.grid{display:grid;grid-template-columns:420px 1fr;gap:24px}.card{background:white;border-radius:22px;padding:22px;box-shadow:0 8px 26px rgba(34,28,18,.08);margin-bottom:20px}.card h2{margin:0 0 18px;color:#073966}.muted{color:#666;line-height:1.7}label{font-weight:800;font-size:14px;display:block;margin-bottom:8px}input,select{width:100%;border:1px solid #ded8cc;border-radius:13px;padding:12px 13px;margin-bottom:12px;background:white}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.four{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.btn{border:0;border-radius:14px;padding:13px 17px;cursor:pointer;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}.primary{background:#073966;color:white}.gold{background:#c9a45c;color:white}.danger{background:#fff0f0;color:#9b2424;border:1px solid #f0b8b8}.line{background:white;color:#073966;border:1px solid #073966}.full{width:100%;margin-bottom:12px}.image-input{border:1px solid #073966;color:#073966;border-radius:12px;padding:10px 12px;display:inline-flex;cursor:pointer;margin-bottom:12px}.image-input input,.hidden-input{display:none}.dm-list{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.dm-card{border:1px solid #ded8cc;border-radius:18px;padding:14px;background:white;cursor:pointer}.dm-card.active{border-color:#073966;background:#eef5fb}.dm-card img{width:100%;height:220px;object-fit:contain;background:#f7f7f7;border-radius:12px;margin-bottom:10px}.contact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.contact-card{border:1px solid #ded8cc;background:white;border-radius:18px;padding:16px}.preview-img{width:100%;height:100px;object-fit:contain;background:#f7f7f7;border-radius:12px;margin-bottom:12px}.empty{padding:34px;text-align:center;color:#666}canvas{width:100%;border:1px solid #ded8cc;border-radius:16px;background:white}.warn{background:#fff7e6;border:1px solid #f0d49a;border-radius:14px;padding:12px;color:#795000;margin-bottom:14px}@media(max-width:980px){.grid{grid-template-columns:1fr}.contact-grid,.dm-list{grid-template-columns:1fr}.four{grid-template-columns:1fr 1fr}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <div style="letter-spacing:.25em;color:rgba(255,255,255,.7);font-size:13px;margin-bottom:8px">JIFU CLOUD DM SYSTEM</div>
+    <h1>吉富 DM 雲端正式版</h1>
+    <p>DM、通訊錄、設定都存在 Supabase，所有裝置同步</p>
+  </div>
+  <nav class="nav">
+    <button id="tab-public" class="active" type="button">前台下載</button>
+    <button id="tab-admin" type="button">後台管理</button>
+    <button id="tab-contacts" type="button">通訊錄</button>
+    <button id="tab-settings" type="button">欄位設定</button>
+    <button id="tab-logs" type="button">紀錄</button>
+  </nav>
+</header>
+<div id="notice" class="notice">正在連線雲端資料庫...</div>
+
+<main class="wrap">
+  <section id="page-public">
+    <div class="grid">
+      <aside>
+        <section class="card">
+          <h2>業務下載 DM</h2>
+          <label>選擇 DM</label>
+          <select id="publicDmSelect"></select>
+          <label>選擇聯絡資訊</label>
+          <select id="publicContact"></select>
+          <div class="two">
+            <label class="image-input">上傳形象照<input id="publicPhotoInput" type="file" accept="image/*"></label>
+            <label class="image-input">上傳 QR Code<input id="publicQrInput" type="file" accept="image/*"></label>
+          </div>
+          <div class="two">
+            <div id="publicPhotoPreview"></div>
+            <div id="publicQrPreview"></div>
+          </div>
+          <button class="btn primary full" type="button" id="btnRenderPublic">產生預覽</button>
+          <button class="btn gold full" type="button" id="btnDownloadFinal">下載完整 DM</button>
+        </section>
+        <section class="card"><h2>目前選擇</h2><p id="publicInfo" class="muted"></p></section>
+      </aside>
+      <section>
+        <section class="card"><h2>前台 A4 預覽</h2><canvas id="publicCanvas"></canvas></section>
+        <section class="card"><h2>可選 DM</h2><div id="publicDmList" class="dm-list"></div></section>
+      </section>
+    </div>
+  </section>
+
+  <section id="page-admin" style="display:none">
+    <div class="grid">
+      <aside>
+        <section class="card">
+          <h2>後台登入</h2>
+          <p id="authStatus" class="muted"></p>
+          <input id="loginEmail" placeholder="管理員 Email">
+          <input id="loginPassword" type="password" placeholder="密碼">
+          <button class="btn primary full" type="button" id="btnLogin">登入後台</button>
+          <button class="btn line full" type="button" id="btnLogout">登出</button>
+        </section>
+        <section class="card admin-only">
+          <h2>上傳已排版 DM</h2>
+          <label class="image-input">一次上傳多張 DM<input id="dmUploadInput" type="file" multiple accept="image/*"></label>
+          <button class="btn gold full" id="btnUploadDms" type="button">上傳並發布</button>
+          <p class="muted">圖片會存到 Supabase Storage，所有人都能看到。</p>
+        </section>
+      </aside>
+      <section>
+        <section class="card"><h2>DM 管理</h2><div id="adminDmList" class="dm-list"></div></section>
+      </section>
+    </div>
+  </section>
+
+  <section id="page-contacts" style="display:none">
+    <section class="card">
+      <h2>通訊錄</h2>
+      <p class="muted">前台所有人可讀取；只有登入管理員可新增、修改、刪除。</p>
+      <div class="admin-only">
+        <div class="four">
+          <input id="contactName" placeholder="姓名">
+          <input id="contactTitle" placeholder="職稱">
+          <input id="contactPhone" placeholder="電話">
+          <input id="contactCompany" placeholder="公司">
+        </div>
+        <input id="contactAddress" placeholder="地址">
+        <button class="btn primary" id="btnAddContact" type="button">新增聯絡人</button>
+      </div>
+      <div id="contactGrid" class="contact-grid" style="margin-top:16px"></div>
+    </section>
+  </section>
+
+  <section id="page-settings" style="display:none">
+    <section class="card">
+      <h2>右上角聯絡資訊欄位設定</h2>
+      <p class="muted">設定會存在雲端，所有人前台都會套用。</p>
+      <div class="four">
+        <input id="nameSize" type="number" placeholder="姓名字級">
+        <input id="titleSize" type="number" placeholder="職稱字級">
+        <input id="phoneSize" type="number" placeholder="電話字級">
+        <input id="companySize" type="number" placeholder="公司字級">
+      </div>
+      <div class="four">
+        <input id="nameGap" type="number" placeholder="姓名區行距">
+        <input id="subGap" type="number" placeholder="下方行距">
+        <input id="paddingX" type="number" placeholder="左右內距">
+        <input id="paddingY" type="number" placeholder="上下內距">
+      </div>
+      <div class="two">
+        <select id="fontFamily">
+          <option value="Microsoft JhengHei">Microsoft JhengHei 微軟正黑體</option>
+          <option value="PMingLiU">PMingLiU 新細明體</option>
+          <option value="MingLiU">MingLiU 細明體</option>
+          <option value="DFKai-SB">DFKai-SB 標楷體</option>
+          <option value="Arial">Arial</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+        <select id="fontWeight">
+          <option value="normal">一般 normal</option>
+          <option value="600">SemiBold 600</option>
+          <option value="bold">粗體 bold</option>
+          <option value="900">超粗 900</option>
+        </select>
+      </div>
+      <div class="two">
+        <input id="fontColor" type="color">
+        <select id="bgEnabled">
+          <option value="false">不要底色，使用公版白色框</option>
+          <option value="true">加半透明底色</option>
+        </select>
+      </div>
+      <button class="btn primary admin-only" id="btnSaveSettings" type="button">儲存設定到雲端</button>
+    </section>
+  </section>
+
+  <section id="page-logs" style="display:none">
+    <section class="card">
+      <h2>雲端存取紀錄</h2>
+      <div id="logsBox" class="muted"></div>
+    </section>
+  </section>
+</main>
+
+<script src="./config.js"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const cfg = window.JIFU_SUPABASE_CONFIG || {};
+const ready = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes("請貼上") && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes("請貼上");
+const W=1456,H=2048;
+let supabase=null, user=null;
+let dms=[], contacts=[], logs=[], selectedDmId="", selectedContactId="";
+let publicAssets={photoUrl:"",qrUrl:""};
+let settings=defaultSettings();
+
+function defaultSettings(){return{x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:"Microsoft JhengHei",fontWeight:"bold",color:"#000000",bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118}}
+function notice(t){document.getElementById("notice").textContent=t}
+function id(){return crypto.randomUUID ? crypto.randomUUID() : "id_"+Date.now()+"_"+Math.random().toString(36).slice(2)}
+function setPage(page){["public","admin","contacts","settings","logs"].forEach(p=>{document.getElementById("page-"+p).style.display=p===page?"block":"none";document.getElementById("tab-"+p).classList.toggle("active",p===page)});render();}
+["public","admin","contacts","settings","logs"].forEach(p=>document.getElementById("tab-"+p).addEventListener("click",()=>setPage(p)));
+
+async function init(){
+  if(!ready){
+    notice("尚未設定 Supabase。請先打開 config.js 填入 SUPABASE_URL 與 SUPABASE_ANON_KEY，並執行 supabase.sql。");
+    return;
+  }
+  supabase=createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const sess=await supabase.auth.getSession();
+  user=sess.data.session?.user||null;
+  supabase.auth.onAuthStateChange((_event,session)=>{user=session?.user||null;renderAuth();loadAll();});
+  bind();
+  await loadAll();
+}
+
+async function loadAll(){
+  if(!supabase)return;
+  const dmRes=await supabase.from("dm_items").select("*").order("created_at",{ascending:false});
+  dms=dmRes.data||[];
+  selectedDmId=selectedDmId||dms[0]?.id||"";
+  const cRes=await supabase.from("contacts").select("*").eq("is_active",true).order("created_at",{ascending:false});
+  contacts=cRes.data||[];
+  selectedContactId=selectedContactId||contacts[0]?.id||"";
+  const sRes=await supabase.from("app_settings").select("*").eq("key","contact_box").maybeSingle();
+  settings={...defaultSettings(),...(sRes.data?.value||{})};
+  if(user){
+    const lRes=await supabase.from("access_logs").select("*").order("created_at",{ascending:false}).limit(50);
+    logs=lRes.data||[];
+  }
+  render();
+  await renderPublicCanvas();
+  notice("已連線雲端資料庫。");
+}
+
+async function addLog(action,detail=""){try{await supabase.from("access_logs").insert({action,detail})}catch(e){}}
+
+function render(){
+  renderAuth();renderDmSelect();renderDmList();renderAdminDmList();renderContacts();renderSettings();renderLogs();renderPublicInfo();renderPublicAssets();
+}
+function renderAuth(){
+  document.getElementById("authStatus").innerHTML=user?`已登入：${user.email}`:"尚未登入。前台可用，後台管理需登入。";
+  document.querySelectorAll(".admin-only").forEach(el=>el.style.display=user?"":"none");
+}
+function renderDmSelect(){
+  publicDmSelect.innerHTML='<option value="">請選擇 DM</option>'+dms.map(d=>`<option value="${d.id}" ${d.id===selectedDmId?"selected":""}>${esc(d.name)}</option>`).join("");
+}
+function renderDmList(){
+  publicDmList.innerHTML=dms.length?dms.map(d=>`<div class="dm-card ${d.id===selectedDmId?"active":""}" data-id="${d.id}"><img src="${d.image_url}"><b>${esc(d.name)}</b><br><small>${new Date(d.created_at).toLocaleString()}</small></div>`).join(""):'<div class="empty">尚無 DM</div>';
+  document.querySelectorAll("#publicDmList .dm-card").forEach(card=>card.onclick=()=>{selectedDmId=card.dataset.id;render();renderPublicCanvas();});
+}
+function renderAdminDmList(){
+  adminDmList.innerHTML=dms.length?dms.map(d=>`<div class="dm-card"><img src="${d.image_url}"><input value="${escAttr(d.name)}" data-id="${d.id}" class="dm-name-input"><div class="two"><button class="btn line dm-save" data-id="${d.id}">改名</button><button class="btn danger dm-delete" data-id="${d.id}">下架</button></div></div>`).join(""):'<div class="empty">尚無 DM</div>';
+  document.querySelectorAll(".dm-save").forEach(btn=>btn.onclick=async()=>{const input=document.querySelector(`.dm-name-input[data-id="${btn.dataset.id}"]`);await supabase.from("dm_items").update({name:input.value}).eq("id",btn.dataset.id);await addLog("DM改名",input.value);loadAll();});
+  document.querySelectorAll(".dm-delete").forEach(btn=>btn.onclick=async()=>{await supabase.from("dm_items").update({is_active:false}).eq("id",btn.dataset.id);await addLog("DM下架",btn.dataset.id);loadAll();});
+}
+function renderContacts(){
+  publicContact.innerHTML='<option value="">請選擇聯絡人</option>'+contacts.map(c=>`<option value="${c.id}" ${c.id===selectedContactId?"selected":""}>${esc(c.name)} ${esc(c.title||"")} ${esc(c.phone||"")}</option>`).join("");
+  contactGrid.innerHTML=contacts.length?contacts.map(c=>`<div class="contact-card"><b>${esc(c.name)} ${esc(c.title||"")}</b><br>${esc(c.phone||"")}<br>${esc(c.company||"")} ${esc(c.address||"")}${user?`<br><button class="btn danger contact-delete" data-id="${c.id}">刪除</button>`:""}</div>`).join(""):'<div class="empty">尚無通訊錄</div>';
+  document.querySelectorAll(".contact-delete").forEach(btn=>btn.onclick=async()=>{await supabase.from("contacts").update({is_active:false}).eq("id",btn.dataset.id);await addLog("刪除聯絡人",btn.dataset.id);loadAll();});
+}
+function renderSettings(){
+  nameSize.value=settings.nameSize; titleSize.value=settings.titleSize; phoneSize.value=settings.phoneSize; companySize.value=settings.companySize;
+  nameGap.value=settings.nameGap; subGap.value=settings.subGap; paddingX.value=settings.paddingX; paddingY.value=settings.paddingY;
+  fontFamily.value=settings.fontFamily; fontWeight.value=settings.fontWeight; fontColor.value=settings.color; bgEnabled.value=String(settings.bgEnabled);
+}
+function renderLogs(){logsBox.innerHTML=user?(logs.length?logs.map(l=>`<div>${new Date(l.created_at).toLocaleString()}｜${esc(l.action)}｜${esc(l.detail||"")}</div>`).join(""):"尚無紀錄"):"請先登入後台查看紀錄。";}
+function renderPublicInfo(){
+  const d=dms.find(x=>x.id===selectedDmId), c=contacts.find(x=>x.id===selectedContactId);
+  publicInfo.innerHTML=`DM：${esc(d?.name||"未選擇")}<br>聯絡人：${esc(c?.name||"未選擇")} ${esc(c?.title||"")}<br>${esc(c?.phone||"")}<br>${esc(c?.company||"")} ${esc(c?.address||"")}`;
+}
+function renderPublicAssets(){publicPhotoPreview.innerHTML=publicAssets.photoUrl?`<img class="preview-img" src="${publicAssets.photoUrl}">`:"";publicQrPreview.innerHTML=publicAssets.qrUrl?`<img class="preview-img" src="${publicAssets.qrUrl}">`:"";}
+
+function bind(){
+  btnLogin.onclick=async()=>{const email=loginEmail.value.trim(),password=loginPassword.value;const res=await supabase.auth.signInWithPassword({email,password});if(res.error)notice("登入失敗："+res.error.message);else notice("登入成功。");};
+  btnLogout.onclick=async()=>{await supabase.auth.signOut();};
+  dmUploadInput.onchange=()=>notice("已選擇 "+dmUploadInput.files.length+" 張 DM，按上傳並發布。");
+  btnUploadDms.onclick=uploadDms;
+  btnAddContact.onclick=addContact;
+  btnSaveSettings.onclick=saveSettings;
+  publicDmSelect.onchange=()=>{selectedDmId=publicDmSelect.value;render();renderPublicCanvas();};
+  publicContact.onchange=()=>{selectedContactId=publicContact.value;render();renderPublicCanvas();};
+  publicPhotoInput.onchange=async e=>{publicAssets.photoUrl=await fileToDataUrl(e.target.files[0]);renderPublicAssets();renderPublicCanvas();};
+  publicQrInput.onchange=async e=>{publicAssets.qrUrl=await fileToDataUrl(e.target.files[0]);renderPublicAssets();renderPublicCanvas();};
+  btnRenderPublic.onclick=renderPublicCanvas;
+  btnDownloadFinal.onclick=downloadFinal;
+}
+
+async function uploadDms(){
+  if(!user) return notice("請先登入後台。");
+  const files=Array.from(dmUploadInput.files||[]);
+  if(!files.length)return notice("請先選擇 DM 圖檔。");
+  for(const file of files){
+    const path=`dm/${Date.now()}-${file.name}`;
+    const up=await supabase.storage.from("dm-assets").upload(path,file,{upsert:true});
+    if(up.error){notice("上傳失敗："+up.error.message);return;}
+    const url=supabase.storage.from("dm-assets").getPublicUrl(path).data.publicUrl;
+    await supabase.from("dm_items").insert({name:file.name.replace(/\.[^.]+$/,""),category:"已排版DM",image_url:url,is_active:true});
+  }
+  await addLog("上傳並發布DM",String(files.length)+" 張");
+  dmUploadInput.value="";
+  await loadAll();
+}
+async function addContact(){
+  if(!user)return notice("請先登入後台。");
+  const row={name:contactName.value||"未命名",title:contactTitle.value||"",phone:contactPhone.value||"",company:contactCompany.value||"",address:contactAddress.value||"",is_active:true};
+  await supabase.from("contacts").insert(row);
+  await addLog("新增聯絡人",row.name);
+  contactName.value=contactTitle.value=contactPhone.value=contactCompany.value=contactAddress.value="";
+  await loadAll();
+}
+async function saveSettings(){
+  if(!user)return notice("請先登入後台。");
+  settings={...settings,nameSize:+nameSize.value||34,titleSize:+titleSize.value||24,phoneSize:+phoneSize.value||26,companySize:+companySize.value||18,nameGap:+nameGap.value||8,subGap:+subGap.value||8,paddingX:+paddingX.value||18,paddingY:+paddingY.value||8,fontFamily:fontFamily.value,fontWeight:fontWeight.value,color:fontColor.value,bgEnabled:bgEnabled.value==="true"};
+  await supabase.from("app_settings").upsert({key:"contact_box",value:settings,updated_at:new Date().toISOString()});
+  await addLog("更新欄位設定","");
+  await loadAll();
+}
+
+async function renderPublicCanvas(){
+  const canvas=publicCanvas, ctx=canvas.getContext("2d");canvas.width=W;canvas.height=H;
+  ctx.fillStyle="#f4f1eb";ctx.fillRect(0,0,W,H);
+  const dm=dms.find(x=>x.id===selectedDmId);
+  if(dm){const img=await loadImage(dm.image_url);if(img)ctx.drawImage(img,0,0,W,H);}else{ctx.fillStyle="#666";ctx.font="36px Arial";ctx.fillText("請先選擇 DM",560,920);}
+  await drawContactOverlay(ctx);
+}
+async function drawContactOverlay(ctx){
+  const c=contacts.find(x=>x.id===selectedContactId)||{}, b=settings;
+  if(b.bgEnabled){ctx.fillStyle="rgba(221,230,239,.88)";roundRect(ctx,b.x,b.y,b.w,b.h,6);ctx.fill();}
+  const padX=b.paddingX||18,padY=b.paddingY||8,nameSize=b.nameSize||34,titleSize=b.titleSize||24,phoneSize=b.phoneSize||26,companySize=b.companySize||18;
+  const line1Y=b.y+padY+nameSize,line2Y=line1Y+(b.nameGap||8)+phoneSize,line3Y=line2Y+(b.subGap||8)+companySize;
+  const family=b.fontFamily||"Microsoft JhengHei",weight=b.fontWeight||"bold";ctx.fillStyle=b.color||"#000";
+  ctx.font=weight+" "+nameSize+"px '"+family+"', Arial";drawFitText(ctx,"聯絡資訊："+(c.name||""),b.x+padX,line1Y,b.w-165,nameSize+6,"left");
+  ctx.font=weight+" "+titleSize+"px '"+family+"', Arial";const tw=ctx.measureText("聯絡資訊："+(c.name||"")).width+12;drawFitText(ctx,c.title||"",b.x+padX+tw,line1Y,b.w-165-tw,titleSize+6,"left");
+  ctx.font=weight+" "+phoneSize+"px '"+family+"', Arial";drawFitText(ctx,c.phone||"",b.x+padX,line2Y,b.w-170,phoneSize+4,"left");
+  ctx.font=weight+" "+companySize+"px '"+family+"', Arial";drawFitText(ctx,(c.company||"吉富工商")+" "+(c.address||""),b.x+padX,line3Y,b.w-170,companySize+4,"left");
+  const photo=await loadImage(publicAssets.photoUrl), qr=await loadImage(publicAssets.qrUrl);
+  if(photo){ctx.save();roundRect(ctx,b.photoX,b.photoY,b.photoSize,b.photoSize,0);ctx.clip();drawCover(ctx,photo,b.photoX,b.photoY,b.photoSize,b.photoSize);ctx.restore();}
+  if(qr){ctx.fillStyle="#fff";ctx.fillRect(b.qrX-4,b.qrY-4,b.qrSize+8,b.qrSize+8);drawContain(ctx,qr,b.qrX,b.qrY,b.qrSize,b.qrSize);}
+}
+async function downloadFinal(){await renderPublicCanvas();const dm=dms.find(x=>x.id===selectedDmId),c=contacts.find(x=>x.id===selectedContactId);const a=document.createElement("a");a.download=((dm?.name||"DM")+"_"+(c?.name||"業務")+".png").replaceAll("/","-");a.href=publicCanvas.toDataURL("image/png");a.click();await addLog("下載DM",`${dm?.name||""} / ${c?.name||""}`);}
+
+function fileToDataUrl(file){return new Promise((res,rej)=>{if(!file)return res("");const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);})}
+function loadImage(src){return new Promise(res=>{if(!src)return res(null);const img=new Image();img.crossOrigin="anonymous";img.onload=()=>res(img);img.onerror=()=>res(null);img.src=src;})}
+function drawFitText(ctx,text,x,y,maxW,maxH,align){const s=String(text||"");if(!s)return;const original=ctx.font;let size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10);while(ctx.measureText(s).width>maxW&&size>10){size-=1;ctx.font=ctx.font.replace(/\d+px/,size+"px");}ctx.textAlign=align||"left";ctx.fillText(s,x,y);ctx.font=original;}
+function drawCover(ctx,img,x,y,w,h){const scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
+function drawContain(ctx,img,x,y,w,h){const scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function escAttr(s){return esc(s).replace(/`/g,"&#96;");}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+吉富 DM 雲端正式版｜免 Build 靜態網站
+
+這版是正式公開使用版：
+- DM 圖檔存在 Supabase Storage
+- 通訊錄存在 Supabase Database
+- 欄位設定存在 Supabase Database
+- 所有人打開同一網址會看到同一份資料
+- 前台不用登入
+- 後台需要 Supabase Auth 管理員登入
+
+部署步驟：
+1. 到 Supabase 建立 Project
+2. 到 SQL Editor 執行 supabase.sql
+3. 到 Authentication > Users 建立管理員 Email/Password
+4. 到 Project Settings > API 複製：
+   - Project URL
+   - anon public key
+5. 打開 config.js，貼上 SUPABASE_URL 與 SUPABASE_ANON_KEY
+6. 把整個資料夾上傳到 Netlify / Vercel / Cloudflare Pages
+
+Vercel：
+- 這是純靜態，不需要 npm install
+- Build Command 留空
+- Output Directory 留空或填 .
+
+Netlify Drop：
+- 把整個資料夾拖到 https://app.netlify.com/drop
+
+注意：
+anon public key 可以放前端，真正權限由 Supabase RLS 控制。
+請務必執行 supabase.sql，否則後台無法正常寫入。
