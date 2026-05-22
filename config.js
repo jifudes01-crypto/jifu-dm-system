@@ -4,6 +4,6 @@
 // 3. 儲存後重新部署或重新上傳整個資料夾
 
 window.JIFU_SUPABASE_CONFIG = {
-  SUPABASE_URL: "請貼上你的 Supabase Project URL",
+  SUPABASE_URL: "https://fbsociyvtobtoeqnwauj.supabase.co",
   SUPABASE_ANON_KEY: sb_publishable_GnkBDLdz6XIMhiCAZjTcJA_T6QQdpLw
 };
