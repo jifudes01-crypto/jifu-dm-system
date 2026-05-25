@@ -1,0 +1,89 @@
+{
+  "name": "吉富 DM 範例模板",
+  "status": "draft",
+  "canvas": {
+    "width": 1080,
+    "height": 1350,
+    "background": {
+      "type": "image",
+      "value": "template-background.png"
+    }
+  },
+  "fields": [
+    {
+      "id": "logo",
+      "type": "image",
+      "label": "LOGO",
+      "role": "logo",
+      "x": 70,
+      "y": 64,
+      "width": 190,
+      "height": 86,
+      "layer": 9
+    },
+    {
+      "id": "photo",
+      "type": "image",
+      "label": "個人形象照",
+      "role": "portrait",
+      "x": 72,
+      "y": 216,
+      "width": 340,
+      "height": 510,
+      "layer": 8
+    },
+    {
+      "id": "company",
+      "type": "text",
+      "label": "公司名稱",
+      "defaultText": "吉富不動產顧問",
+      "x": 450,
+      "y": 152,
+      "width": 520,
+      "height": 66,
+      "fontSize": 25,
+      "color": "#17684f",
+      "fontWeight": "800",
+      "layer": 10
+    },
+    {
+      "id": "name",
+      "type": "text",
+      "label": "姓名",
+      "defaultText": "王小明",
+      "x": 450,
+      "y": 280,
+      "width": 420,
+      "height": 70,
+      "fontSize": 38,
+      "color": "#242321",
+      "fontWeight": "900",
+      "layer": 11
+    },
+    {
+      "id": "phone",
+      "type": "text",
+      "label": "電話",
+      "defaultText": "0900-000-000",
+      "x": 454,
+      "y": 438,
+      "width": 470,
+      "height": 48,
+      "fontSize": 21,
+      "color": "#242321",
+      "fontWeight": "750",
+      "layer": 12
+    },
+    {
+      "id": "qr",
+      "type": "image",
+      "label": "QR Code",
+      "role": "qr",
+      "x": 790,
+      "y": 930,
+      "width": 210,
+      "height": 210,
+      "layer": 20
+    }
+  ]
+}

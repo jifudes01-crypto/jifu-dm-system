@@ -3,14 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#17243a" />
-    <title>吉富工商地產 DM 雲端產生系統</title>
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="description"
+      content="吉富 DM 套版系統：前台套版、後台模板管理、拖拉編輯、紀錄預覽與圖片下載。"
+    />
+    <base href="./" />
+    <title>吉富 DM 套版系統</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script defer src="./app.js"></script>
   </head>
   <body>
-    <div id="app"></div>
-    <script src="./config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js"></script>
+    <noscript>
+      <div class="fatal-panel">
+        此系統需要啟用 JavaScript 才能使用前台套版、後台管理與下載功能。
+      </div>
+    </noscript>
+
+    <div id="fatal" class="fatal-panel" hidden>
+      <h1>系統暫時無法載入</h1>
+      <p id="fatalMessage">請重新整理頁面。如果仍無法使用，可先匯出資料備份後重置本機資料。</p>
+      <div class="fatal-actions">
+        <button type="button" class="button primary" onclick="location.reload()">重新整理</button>
+        <button type="button" class="button" onclick="window.dmSystemExportBackup && window.dmSystemExportBackup()">
+          匯出備份
+        </button>
+        <button type="button" class="button danger" onclick="window.dmSystemResetLocal && window.dmSystemResetLocal()">
+          重置本機資料
+        </button>
+      </div>
+    </div>
+
+    <div id="app" class="app-shell" aria-live="polite">
+      <div class="loading-panel">正在準備 DM 套版系統...</div>
+    </div>
   </body>
 </html>
