@@ -1,3 +1,4 @@
+/* JIFU_CONTACT_COLON_FINAL_20260527 */
 /* JIFU_FORCE_UPDATE_20260527_FINAL - app.js */
 (function(){
   'use strict';
@@ -756,7 +757,7 @@
     ctx.fillStyle = color;
 
     ctx.font = weight + ' ' + labelSize + 'px "' + family + '", Arial';
-    fitText(ctx, '聯絡資訊', textX, y + labelSize, safeTextW, labelSize + 4);
+    fitText(ctx, '聯絡資訊：', textX, y + labelSize, safeTextW, labelSize + 4);
 
     y += labelSize + lineGap;
 
