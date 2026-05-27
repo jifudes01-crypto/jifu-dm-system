@@ -1,3 +1,4 @@
+/* JIFU_TEXT_LINE_ALIGN_FIX_20260527 */
 /* JIFU_TEMPLATE_FIXED_COORDINATE_FINAL_20260527 */
 /* JIFU_FINAL_CONTACT_ASSETS_FROM_CURRENT_20260527 */
 (function(){
@@ -226,13 +227,13 @@
     // 依 1456 x 2048 DM 原始畫布設定的固定座標。
     // 左側文字欄位
     var nameX = 982;
-    var nameY = 151;
+    var nameY = 132;
     var titleX = 1126;
-    var titleY = 151;
+    var titleY = 132;
     var phoneX = 982;
-    var phoneY = 204;
+    var phoneY = 184;
     var companyX = 982;
-    var companyY = 258;
+    var companyY = 236;
 
     // 右側圖檔欄位
     var qrBothX = 1187;
@@ -257,17 +258,17 @@
     var qr = await loadImage(c.qr_url || c.qr_code_url || '');
 
     // 文字：只填值，不畫標題、不畫 icon、不畫線。
-    ctx.font = weight + ' 24px "' + family + '", Arial';
-    fitText(ctx, c.name || '', nameX, nameY, textMaxName, 28);
-
     ctx.font = weight + ' 22px "' + family + '", Arial';
-    fitText(ctx, c.title || '', titleX, titleY, textMaxTitle, 26);
+    fitText(ctx, c.name || '', nameX, nameY, textMaxName, 26);
 
-    ctx.font = weight + ' 28px "' + family + '", Arial';
-    fitText(ctx, c.phone || '', phoneX, phoneY, textMaxLine, 32);
+    ctx.font = weight + ' 20px "' + family + '", Arial';
+    fitText(ctx, c.title || '', titleX, titleY, textMaxTitle, 24);
 
-    ctx.font = weight + ' 26px "' + family + '", Arial';
-    fitText(ctx, c.company || '吉富工商', companyX, companyY, textMaxLine, 30);
+    ctx.font = weight + ' 24px "' + family + '", Arial';
+    fitText(ctx, c.phone || '', phoneX, phoneY, textMaxLine, 28);
+
+    ctx.font = weight + ' 23px "' + family + '", Arial';
+    fitText(ctx, c.company || '吉富工商', companyX, companyY, textMaxLine, 27);
 
     // QR 與形象照：依模板固定位置放置。
     if (photo && qr) {
