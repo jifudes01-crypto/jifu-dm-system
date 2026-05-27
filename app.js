@@ -1,3 +1,4 @@
+/* JIFU_FORCE_UPDATE_20260527_FINAL - app.js */
 (function(){
   'use strict';
 
