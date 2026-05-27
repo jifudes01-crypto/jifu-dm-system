@@ -1,3 +1,4 @@
+/* JIFU_CURRENT_DIRECT_REPAIR_FIXED_20260527 */
 /* JIFU_SAFE_RESTORE_NO_DUPLICATE_CONTACT_GRAPHICS_20260527 */
 /* JIFU_GET_SELECTED_CONTACT_FIX_20260527 */
 /* JIFU_NEW_CONTACT_BOX_LAYOUT_20260527 */
@@ -55,21 +56,17 @@
     };
   }
 
-  
   function normalizeSettings(input){
-    var s=Object.assign(defaultSettings(),input||{});
-
-    // 新版右上聯絡框固定配置：
-    // 左：文字資訊；中：QR；右：形象照。
-    s.photoX=1284;
-    s.photoY=72;
-    s.photoSize=132;
-    s.qrX=1152;
-    s.qrY=76;
-    s.qrSize=106;
-
+    var s = Object.assign(defaultSettings(), input || {});
+    s.photoX = Number(s.photoX) || 1284;
+    s.photoY = Number(s.photoY) || 72;
+    s.photoSize = Number(s.photoSize) || 132;
+    s.qrX = Number(s.qrX) || 1152;
+    s.qrY = Number(s.qrY) || 76;
+    s.qrSize = Number(s.qrSize) || 106;
     return s;
   }
+
 
   function bucket(){
     return cfg.storageBucket || cfg.bucket || 'dm-assets';
@@ -95,9 +92,7 @@
     return Date.now() + '_' + Math.random().toString(36).slice(2) + '_' + (prefix || 'file') + ext;
   }
 
-  function isUnsafeFileName(name){
-    return /[\u4e00-\u9fff\s'"\\/]/.test(String(name || ''));
-  }
+  function isUnsafeFileName(name){ return false; }
 
   window.addEventListener('error', function(e){
     console.error(e.error || e.message);
@@ -413,6 +408,14 @@
       input.onchange = function(e){ uploadContactAsset(e, input.dataset.qrContact, 'qr'); };
     });
 
+    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){
+      btn.onclick = function(e){ deleteContactAsset(e, btn.dataset.deletePhoto, 'photo'); };
+    });
+
+    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){
+      btn.onclick = function(e){ deleteContactAsset(e, btn.dataset.deleteQr, 'qr'); };
+    });
+
     document.querySelectorAll('[data-select-contact]').forEach(function(btn){
       btn.onclick = function(){
         selectedContact = btn.dataset.selectContact;
@@ -483,8 +486,10 @@
     if (!contacts.length) return '<div class="empty">尚無通訊錄</div>';
 
     return contacts.map(function(c){
-      var hasPhoto = !!c.photo_url;
-      var hasQr = !!c.qr_url;
+      var photoUrl = c.photo_url || c.avatar_url || '';
+      var qrUrl = c.qr_url || c.qr_code_url || '';
+      var hasPhoto = !!photoUrl;
+      var hasQr = !!qrUrl;
 
       return (
         '<article class="contact-card ' + (c.id === selectedContact ? 'active' : '') + '">' +
@@ -493,17 +498,22 @@
             '<p>' + escapeHtml(c.phone || '') + '<br>' + escapeHtml(c.company || '') + (c.address ? '<br>' + escapeHtml(c.address) : '') + '</p>' +
             '<div class="contact-actions">' +
               '<button class="btn line small" data-select-contact="' + c.id + '">前台預覽</button>' +
-              (user ? '<button class="btn danger small" data-delete-contact="' + c.id + '">刪除</button>' : '') +
+              (user ? '<button class="btn danger small" data-delete-contact="' + c.id + '">刪除聯絡人</button>' : '') +
             '</div>' +
           '</div>' +
-          '<div class="asset-panel">' +
-            '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(c.photo_url) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
-            '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(c.qr_url) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
-            (user ?
-              '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-              '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>'
-              : ''
-            ) +
+          '<div class="asset-panel fixed-asset-panel">' +
+            '<div class="asset-box">' +
+              '<div class="asset-title">形象照</div>' +
+              '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
+              (user ? '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
+                (hasPhoto ? '<button class="asset-delete" data-delete-photo="' + c.id + '" type="button">刪除形象照</button>' : '<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>') : '') +
+            '</div>' +
+            '<div class="asset-box">' +
+              '<div class="asset-title">QR Code</div>' +
+              '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
+              (user ? '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>' +
+                (hasQr ? '<button class="asset-delete" data-delete-qr="' + c.id + '" type="button">刪除 QR Code</button>' : '<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>') : '') +
+            '</div>' +
           '</div>' +
         '</article>'
       );
@@ -610,6 +620,42 @@
 
     await addLog(kind === 'qr' ? '更新業務QR' : '更新業務形象照', contactId);
     notice(kind === 'qr' ? 'QR Code 已更新。' : '形象照已更新。');
+    loadAll();
+  }
+
+
+  async function deleteContactAsset(e, contactId, kind){
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!user) return notice('請先登入後台。');
+
+    var label = kind === 'qr' ? 'QR Code' : '形象照';
+    if (!confirm('確定要刪除這位業務的' + label + '？')) return;
+
+    var payload = {};
+    if (kind === 'qr') {
+      payload.qr_url = '';
+      payload.qr_code_url = '';
+    } else {
+      payload.photo_url = '';
+      payload.avatar_url = '';
+    }
+
+    var res = await sb.from('contacts').update(payload).eq('id', contactId);
+
+    if (res.error) {
+      var fallback = {};
+      if (kind === 'qr') fallback.qr_url = '';
+      else fallback.photo_url = '';
+      res = await sb.from('contacts').update(fallback).eq('id', contactId);
+    }
+
+    if (res.error) {
+      notice(label + '刪除失敗：' + res.error.message);
+      return;
+    }
+
+    await addLog('刪除業務' + label, contactId);
+    notice(label + '已刪除。');
     loadAll();
   }
 
@@ -743,7 +789,7 @@
     var c = getSelectedContact() || {};
     var b = normalizeSettings(settings);
 
-    // 只套資料，不重畫模板上的「專業請找」、icon、底線、背景。
+    // 只填聯絡資訊內容；不重畫 DM 圖檔既有的標題、icon、底線、背景。
     var boxX = b.x || 950;
     var boxY = b.y || 58;
     var boxW = b.w || 452;
@@ -751,10 +797,11 @@
     var family = b.fontFamily || 'Microsoft JhengHei';
     var weight = b.fontWeight || 'bold';
     var color = b.color || '#111';
+
     ctx.fillStyle = color;
     ctx.textBaseline = 'alphabetic';
 
-    // 依目前模板線條微調：文字放在線上方，不壓線。
+    // 文字位置：放在模板線條上方，不壓線。
     var nameX = boxX + 96;
     var titleX = boxX + 255;
     var phoneX = boxX + 96;
@@ -779,7 +826,7 @@
     var photo = await loadImage(c.photo_url || c.avatar_url || '');
     var qr = await loadImage(c.qr_url || c.qr_code_url || '');
 
-    // 圖片只貼到模板預留位置，不影響文字。
+    // 圖片：雙圖 QR 左、人像右；單圖靠右。
     var qrSize = 106;
     var photoW = 130;
     var photoH = 132;

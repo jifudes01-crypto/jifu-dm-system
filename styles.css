@@ -1,3 +1,4 @@
+/* JIFU_CURRENT_DIRECT_REPAIR_FIXED_20260527 */
 :root {
   --bg: #f6f4ef;
   --panel: #ffffff;
@@ -707,3 +708,43 @@ a {
     flex: 1 1 auto;
   }
 }
+
+
+/* Contact asset management repair */
+.fixed-asset-panel{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:10px !important;
+}
+.asset-box{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:0;
+}
+.asset-title{
+  font-size:13px;
+  font-weight:900;
+  color:#123a55;
+  text-align:center;
+}
+.asset-delete{
+  display:block;
+  width:100%;
+  border:1px solid #f0caca;
+  background:#fff1f1;
+  color:#8a1d1d;
+  border-radius:10px;
+  padding:9px 8px;
+  font-weight:900;
+  font-size:13px;
+  cursor:pointer;
+}
+.asset-delete:hover{background:#ffe2e2;}
+.asset-delete.disabled,.asset-delete:disabled{
+  background:#f6f1ec;
+  border-color:#e3d8cd;
+  color:#a9a19a;
+  cursor:not-allowed;
+}
+.qr-preview img{object-fit:contain!important;background:#fff;}
