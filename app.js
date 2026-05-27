@@ -1,4 +1,4 @@
-/* JIFU_TRUE_FINAL_FIXED_TODAY_20260527 */
+/* JIFU_REAL_FINAL_SYNC_PREVIEW_NO_FRONT_UPLOAD_20260527 */
 (function(){
   'use strict';
   var app=document.getElementById('app');
@@ -68,7 +68,23 @@
   }
 
   function frontHtml(){
-    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2><div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select></div><div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄。</small></div><label class="upload">上傳形象照<input id="photoInput" type="file" accept="image/*"></label><div id="photoPreview">'+(assets.photo?'<img class="preview-img" src="'+assets.photo+'">':'')+'</div><label class="upload">上傳 QR Code<input id="qrInput" type="file" accept="image/*"></label><div id="qrPreview">'+(assets.qr?'<img class="preview-img" src="'+assets.qr+'">':'')+'</div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、選擇聯絡人、上傳形象照與 QR Code，即可下載完整 DM。聯絡資訊只會套在右上角白色框，不會跑到物件區。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
+    var c = getSelectedContact();
+    var photoUrl = c ? (c.photo_url || c.avatar_url || '') : '';
+    var qrUrl = c ? (c.qr_url || c.qr_code_url || '') : '';
+
+    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>' +
+      '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select></div>' +
+      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small></div>' +
+      '<div class="mini-contact">' +
+        '<div><strong>' + escapeHtml(c ? (c.name || '未命名') : '尚未選擇') + '</strong><span>' + escapeHtml(c ? (c.title || '') : '') + '</span><p>' + escapeHtml(c ? (c.phone || '') : '') + '<br>' + escapeHtml(c ? (c.company || '') : '') + '</p></div>' +
+        '<div class="mini-assets">' +
+          (photoUrl ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>無形象照</span>') +
+          (qrUrl ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>無 QR</span>') +
+        '</div>' +
+      '</div>' +
+      '<button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button>' +
+      '</section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM 與自己的姓名，即可自動帶入聯絡資訊、形象照與 QR Code，並下載完整 DM。上傳與刪除請到後台通訊錄管理。</p></section></aside>' +
+      '<section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
   }
   function adminHtml(){
     return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">請使用英文檔名，例如 A26-5_DM01.jpg。不要用中文、空格、單引號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
@@ -84,20 +100,37 @@
   function bindPage(){
     var el;
     if((el=document.getElementById('dmSelect'))) el.onchange=function(){selectedDm=this.value; render(); renderCanvas();};
-    if((el=document.getElementById('contactSelect'))) el.onchange=function(){selectedContact=this.value; renderCanvas();};
+    if((el=document.getElementById('contactSelect'))) el.onchange=function(){selectedContact=this.value; render(); renderCanvas();};
     if((el=document.getElementById('renderBtn'))) el.onclick=renderCanvas;
     if((el=document.getElementById('downloadBtn'))) el.onclick=downloadCanvas;
-    if((el=document.getElementById('photoInput'))) el.onchange=function(e){readFile(e.target.files[0]).then(function(url){assets.photo=url;render();renderCanvas();});};
-    if((el=document.getElementById('qrInput'))) el.onchange=function(e){readFile(e.target.files[0]).then(function(url){assets.qr=url;render();renderCanvas();});};
+
     if((el=document.getElementById('loginBtn'))) el.onclick=login;
     if((el=document.getElementById('logoutBtn'))) el.onclick=logout;
     if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); document.getElementById('pendingInfo').textContent='已選擇 '+pendingFiles.length+' 張 DM';};
     if((el=document.getElementById('uploadBtn'))) el.onclick=uploadDms;
     if((el=document.getElementById('addContactBtn'))) el.onclick=addContact;
     if((el=document.getElementById('saveSettingsBtn'))) el.onclick=saveSettings;
+
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
     document.querySelectorAll('[data-delete-dm]').forEach(function(btn){btn.onclick=deleteDm;});
     document.querySelectorAll('[data-delete-contact]').forEach(function(btn){btn.onclick=deleteContact;});
+
+    document.querySelectorAll('[data-select-contact]').forEach(function(btn){
+      btn.onclick=function(){selectedContact=btn.dataset.selectContact;view='front';render();setTimeout(renderCanvas,50);};
+    });
+    document.querySelectorAll('[data-photo-contact]').forEach(function(input){
+      input.onchange=function(e){uploadContactAsset(e,input.dataset.photoContact,'photo');};
+    });
+    document.querySelectorAll('[data-qr-contact]').forEach(function(input){
+      input.onchange=function(e){uploadContactAsset(e,input.dataset.qrContact,'qr');};
+    });
+    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){
+      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deletePhoto,'photo');};
+    });
+    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){
+      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deleteQr,'qr');};
+    });
+
     var ff=document.getElementById('fontFamily'); if(ff)ff.value=settings.fontFamily;
     var fw=document.getElementById('fontWeight'); if(fw)fw.value=settings.fontWeight;
     var bg=document.getElementById('bgEnabled'); if(bg)bg.value=String(!!settings.bgEnabled);
@@ -105,42 +138,27 @@
 
   function options(items,selected,label,empty){return '<option value="">'+empty+'</option>'+items.map(function(x){return '<option value="'+x.id+'" '+(x.id===selected?'selected':'')+'>'+escapeHtml(x[label]||'未命名')+'</option>';}).join('');}
   function contactOptions(){return '<option value="">請選擇聯絡人</option>'+contacts.map(function(c){return '<option value="'+c.id+'" '+(c.id===selectedContact?'selected':'')+'>'+escapeHtml(c.name||'未命名')+'｜'+escapeHtml(c.title||'')+'｜'+escapeHtml(c.phone||'')+'</option>';}).join('');}
+  function getSelectedContact(){
+    return contacts.find(function(x){return x.id===selectedContact;}) || contacts[0] || null;
+  }
   function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span><div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
   function contactCards(){
-    if (!contacts.length) return '<div class="empty">尚無通訊錄</div>';
-
+    if(!contacts.length) return '<div class="empty">尚無通訊錄</div>';
     return contacts.map(function(c){
-      var photoUrl = c.photo_url || c.avatar_url || '';
-      var qrUrl = c.qr_url || c.qr_code_url || '';
-      var hasPhoto = !!photoUrl;
-      var hasQr = !!qrUrl;
-
-      return (
-        '<article class="contact-card ' + (c.id === selectedContact ? 'active' : '') + '">' +
-          '<div class="contact-info">' +
-            '<h3>' + escapeHtml(c.name || '未命名') + '<span>' + escapeHtml(c.title || '') + '</span></h3>' +
-            '<p>' + escapeHtml(c.phone || '') + '<br>' + escapeHtml(c.company || '') + (c.address ? '<br>' + escapeHtml(c.address) : '') + '</p>' +
-            '<div class="contact-actions">' +
-              '<button class="btn line small" data-select-contact="' + c.id + '">前台預覽</button>' +
-              (user ? '<button class="btn danger small" data-delete-contact="' + c.id + '">刪除聯絡人</button>' : '') +
-            '</div>' +
-          '</div>' +
-          '<div class="asset-panel fixed-asset-panel">' +
-            '<div class="asset-box">' +
-              '<div class="asset-title">形象照</div>' +
-              '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
-              (user ? '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-                (hasPhoto ? '<button class="asset-delete" data-delete-photo="' + c.id + '" type="button">刪除形象照</button>' : '<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>') : '') +
-            '</div>' +
-            '<div class="asset-box">' +
-              '<div class="asset-title">QR Code</div>' +
-              '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
-              (user ? '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-                (hasQr ? '<button class="asset-delete" data-delete-qr="' + c.id + '" type="button">刪除 QR Code</button>' : '<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>') : '') +
-            '</div>' +
-          '</div>' +
-        '</article>'
-      );
+      var photoUrl=c.photo_url||c.avatar_url||'';
+      var qrUrl=c.qr_url||c.qr_code_url||'';
+      var hasPhoto=!!photoUrl;
+      var hasQr=!!qrUrl;
+      return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'">' +
+        '<div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3>' +
+        '<p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>' +
+        '<div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div>' +
+        '<div class="asset-panel fixed-asset-panel">' +
+          '<div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>' +
+            (user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'')+'</div>' +
+          '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
+            (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'')+'</div>' +
+        '</div></div>';
     }).join('');
   }
 
@@ -148,39 +166,45 @@
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
-
-  async function deleteContactAsset(e, contactId, kind){
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (!user) return notice('請先登入後台。');
-
-    var label = kind === 'qr' ? 'QR Code' : '形象照';
-    if (!confirm('確定要刪除這位業務的' + label + '？')) return;
-
-    var payload = {};
-    if (kind === 'qr') {
-      payload.qr_url = '';
-      payload.qr_code_url = '';
-    } else {
-      payload.photo_url = '';
-      payload.avatar_url = '';
+  async function uploadContactAsset(e,contactId,kind){
+    if(!user) return notice('請先登入後台。');
+    var file=(e.target.files||[])[0];
+    if(!file) return;
+    var folder=kind==='qr'?'qr':'photo';
+    var path='contacts/'+folder+'/'+contactId+'/'+safeName(file.name,folder);
+    var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'});
+    if(up.error){notice('上傳失敗：'+up.error.message);return;}
+    var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl;
+    var payload={};
+    if(kind==='qr'){payload.qr_url=url;payload.qr_code_url=url;}else{payload.photo_url=url;payload.avatar_url=url;}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error){
+      var fallback={};
+      if(kind==='qr')fallback.qr_url=url;else fallback.photo_url=url;
+      res=await sb.from('contacts').update(fallback).eq('id',contactId);
     }
+    if(res.error){notice('通訊錄圖片更新失敗：'+res.error.message);return;}
+    await addLog(kind==='qr'?'更新業務QR':'更新業務形象照',contactId);
+    notice(kind==='qr'?'QR Code 已更新。':'形象照已更新。');
+    loadAll();
+  }
 
-    var res = await sb.from('contacts').update(payload).eq('id', contactId);
-
-    if (res.error) {
-      var fallback = {};
-      if (kind === 'qr') fallback.qr_url = '';
-      else fallback.photo_url = '';
-      res = await sb.from('contacts').update(fallback).eq('id', contactId);
+  async function deleteContactAsset(e,contactId,kind){
+    if(e&&e.stopPropagation)e.stopPropagation();
+    if(!user) return notice('請先登入後台。');
+    var label=kind==='qr'?'QR Code':'形象照';
+    if(!confirm('確定要刪除這位業務的'+label+'？'))return;
+    var payload={};
+    if(kind==='qr'){payload.qr_url='';payload.qr_code_url='';}else{payload.photo_url='';payload.avatar_url='';}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error){
+      var fallback={};
+      if(kind==='qr')fallback.qr_url='';else fallback.photo_url='';
+      res=await sb.from('contacts').update(fallback).eq('id',contactId);
     }
-
-    if (res.error) {
-      notice(label + '刪除失敗：' + res.error.message);
-      return;
-    }
-
-    await addLog('刪除業務' + label, contactId);
-    notice(label + '已刪除。');
+    if(res.error){notice(label+'刪除失敗：'+res.error.message);return;}
+    await addLog('刪除業務'+label,contactId);
+    notice(label+'已刪除。');
     loadAll();
   }
 
@@ -192,48 +216,41 @@
 
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
-
-  function getSelectedContact(){
-    return contacts.find(function(x){ return x.id === selectedContact; }) || contacts[0] || null;
-  }
-
   async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
   async function drawContact(ctx){
-    var c = getSelectedContact() || {};
+    var c=getSelectedContact()||{};
+    var family=settings.fontFamily||'Microsoft JhengHei';
+    var weight=settings.fontWeight||'bold';
+    ctx.fillStyle=settings.color||'#111';
+    ctx.textBaseline='alphabetic';
 
-    // 最終決定：
-    // DM 圖檔已經有右上聯絡框與「專業請找」。
-    // 程式不再畫文字、不再畫 icon、不再畫線條、不再畫背景。
-    // 只處理：大框形象照 + 小框 QR。
+    // 文字同步到預覽圖：不重畫模板上的標題/icon/線條。
+    ctx.font=weight+' 26px "'+family+'", Arial';
+    fitText(ctx,c.name||'',1008,122,160,30);
+    ctx.font=weight+' 22px "'+family+'", Arial';
+    fitText(ctx,c.title||'',1188,122,120,26);
+    ctx.font=weight+' 30px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',1008,170,300,34);
+    ctx.font=weight+' 28px "'+family+'", Arial';
+    fitText(ctx,c.company||'吉富工商',1008,220,300,32);
 
-    var photo = await loadImage(c.photo_url || c.avatar_url || '');
-    var qr = await loadImage(c.qr_url || c.qr_code_url || '');
+    var photo=await loadImage(c.photo_url||c.avatar_url||'');
+    var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    // 以 1456 x 2048 原始 DM 畫布為基準。
-    // 灰色聯絡框約 X=908, Y=23, W=525, H=247。
-    // 大框：形象照，右側直式區。
-    var photoX = 1278;
-    var photoY = 68;
-    var photoW = 150;
-    var photoH = 188;
+    // 大框 = 形象照；小框 = QR。
+    var qrX=1180, qrY=166, qrSize=90;
+    var photoX=1278, photoY=68, photoW=150, photoH=188;
 
-    // 小框：QR，位於形象照左下，與形象照底部對齊。
-    var qrSize = 90;
-    var qrX = 1180;
-    var qrY = photoY + photoH - qrSize;
-
-    // 先畫 QR，再畫形象照，兩者不互蓋。
-    if (qr) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8);
-      drawSquareContain(ctx, qr, qrX, qrY, qrSize, qrSize);
+    if(qr){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(qrX-4,qrY-4,qrSize+8,qrSize+8);
+      drawSquareContain(ctx,qr,qrX,qrY,qrSize,qrSize);
     }
-
-    if (photo) {
+    if(photo){
       ctx.save();
-      roundRect(ctx, photoX, photoY, photoW, photoH, 4);
+      roundRect(ctx,photoX,photoY,photoW,photoH,4);
       ctx.clip();
-      drawPortraitCrop(ctx, photo, photoX, photoY, photoW, photoH);
+      drawPortraitCrop(ctx,photo,photoX,photoY,photoW,photoH);
       ctx.restore();
     }
   }
@@ -244,4 +261,14 @@ function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return;
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
   async function downloadCanvas(){await renderCanvas(); var dm=dms.find(function(x){return x.id===selectedDm;}); var c=contacts.find(function(x){return x.id===selectedContact;}); var a=document.createElement('a'); a.href=document.getElementById('dmCanvas').toDataURL('image/png'); a.download=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-'); a.click(); await addLog('下載DM',a.download);}
   init();
-})();
+})();  function drawPortraitCrop(ctx,img,x,y,w,h){
+    if(!img)return;
+    var iw=img.width,ih=img.height;
+    var scale=Math.max(w/iw,h/ih);
+    var sw=w/scale,sh=h/scale;
+    var sx=(iw-sw)/2;
+    var sy=Math.max(0,Math.min(ih-sh,ih*0.06));
+    ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+  }
+
+
