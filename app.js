@@ -1,4 +1,4 @@
-/* JIFU_REMOVE_DUPLICATE_TEMPLATE_GRAPHICS_FINAL_20260527 */
+/* JIFU_SAFE_RESTORE_NO_DUPLICATE_CONTACT_GRAPHICS_20260527 */
 /* JIFU_GET_SELECTED_CONTACT_FIX_20260527 */
 /* JIFU_NEW_CONTACT_BOX_LAYOUT_20260527 */
 /* JIFU_CONTACT_COLON_FINAL_20260527 */
@@ -743,8 +743,7 @@
     var c = getSelectedContact() || {};
     var b = normalizeSettings(settings);
 
-    // 重要：DM 圖檔本身已經有「專業請找」、icon、底線、背景。
-    // 這裡只填入文字與圖片，不再重畫標題、icon、底線。
+    // 只套資料，不重畫模板上的「專業請找」、icon、底線、背景。
     var boxX = b.x || 950;
     var boxY = b.y || 58;
     var boxW = b.w || 452;
@@ -755,36 +754,32 @@
     ctx.fillStyle = color;
     ctx.textBaseline = 'alphabetic';
 
-    // 文字固定貼在模板原本三條線的上方。
+    // 依目前模板線條微調：文字放在線上方，不壓線。
     var nameX = boxX + 96;
-    var titleX = boxX + 252;
+    var titleX = boxX + 255;
     var phoneX = boxX + 96;
     var companyX = boxX + 96;
 
     var nameY = boxY + 82;
-    var phoneY = boxY + 132;
-    var companyY = boxY + 182;
+    var phoneY = boxY + 128;
+    var companyY = boxY + 176;
 
-    var nameMax = 145;
-    var titleMax = 110;
-    var lineMax = 270;
+    ctx.font = weight + ' 28px "' + family + '", Arial';
+    fitText(ctx, c.name || '', nameX, nameY, 150, 32);
 
-    ctx.font = weight + ' 30px "' + family + '", Arial';
-    fitText(ctx, c.name || '', nameX, nameY, nameMax, 34);
+    ctx.font = weight + ' 22px "' + family + '", Arial';
+    fitText(ctx, c.title || '', titleX, nameY, 120, 26);
 
-    ctx.font = weight + ' 24px "' + family + '", Arial';
-    fitText(ctx, c.title || '', titleX, nameY, titleMax, 28);
+    ctx.font = weight + ' 31px "' + family + '", Arial';
+    fitText(ctx, c.phone || '', phoneX, phoneY, 280, 35);
 
-    ctx.font = weight + ' 34px "' + family + '", Arial';
-    fitText(ctx, c.phone || '', phoneX, phoneY, lineMax, 38);
-
-    ctx.font = weight + ' 32px "' + family + '", Arial';
-    fitText(ctx, c.company || '吉富工商', companyX, companyY, lineMax, 36);
+    ctx.font = weight + ' 29px "' + family + '", Arial';
+    fitText(ctx, c.company || '吉富工商', companyX, companyY, 280, 33);
 
     var photo = await loadImage(c.photo_url || c.avatar_url || '');
     var qr = await loadImage(c.qr_url || c.qr_code_url || '');
 
-    // 圖片固定：雙圖時 QR 在左、形象照在右；單圖時靠右。
+    // 圖片只貼到模板預留位置，不影響文字。
     var qrSize = 106;
     var photoW = 130;
     var photoH = 132;
