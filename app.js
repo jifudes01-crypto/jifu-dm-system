@@ -10,7 +10,7 @@
   var settings=defaultSettings();
   var pendingFiles=[];
 
-  function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118};}
+  function defaultSettings(){return {x:950,y:58,w:452,h:142,labelSize:20,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118};}
   function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
   function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
   function notice(msg){var n=document.getElementById('notice'); if(n)n.textContent=msg;}
@@ -76,7 +76,27 @@
     return '<section class="card"><h2>通訊錄管理</h2><p class="muted">前台會讀取這裡的業務資料。CSV 匯入欄位請用：name,title,phone,company,address</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div><div class="contact-grid" style="margin-top:18px">'+contactCards()+'</div></section>';
   }
   function settingsHtml(){
-    return '<section class="card"><h2>右上角聯絡資訊欄位設定</h2><p class="muted">所有設定都會存到雲端。這些欄位只控制右上角白色聯絡資訊框，不會影響物件格。</p><div class="row4"><div class="field"><label>姓名字級</label><input id="nameSize" type="number" value="'+settings.nameSize+'"></div><div class="field"><label>職稱字級</label><input id="titleSize" type="number" value="'+settings.titleSize+'"></div><div class="field"><label>電話字級</label><input id="phoneSize" type="number" value="'+settings.phoneSize+'"></div><div class="field"><label>公司/地址字級</label><input id="companySize" type="number" value="'+settings.companySize+'"></div></div><div class="row4"><div class="field"><label>姓名區行距</label><input id="nameGap" type="number" value="'+settings.nameGap+'"></div><div class="field"><label>下方資訊行距</label><input id="subGap" type="number" value="'+settings.subGap+'"></div><div class="field"><label>左右內距</label><input id="paddingX" type="number" value="'+settings.paddingX+'"></div><div class="field"><label>上下內距</label><input id="paddingY" type="number" value="'+settings.paddingY+'"></div></div><div class="row"><div class="field"><label>字型</label><select id="fontFamily"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>MingLiU</option><option>DFKai-SB</option><option>Arial</option><option>Tahoma</option></select></div><div class="field"><label>文字粗細</label><select id="fontWeight"><option value="normal">一般</option><option value="600">SemiBold</option><option value="bold">粗體</option><option value="900">超粗</option></select></div></div><div class="row"><div class="field"><label>文字顏色</label><input id="fontColor" type="color" value="'+settings.color+'"></div><div class="field"><label>聯絡區背景</label><select id="bgEnabled"><option value="false">不要底色，使用公版白色框</option><option value="true">加半透明底色</option></select></div></div><button id="saveSettingsBtn" class="btn primary '+(!user?'hidden':'')+'">儲存設定到雲端</button><p class="admin-only-note '+(user?'hidden':'')+'">請先登入後台，才能儲存欄位設定。</p></section>';
+    return '<section class="card"><h2>右上角聯絡資訊欄位設定</h2><p class="muted">所有設定都會存到雲端。聯絡資訊固定只套在右上角白色框，不會影響物件格。</p>'+
+    '<div class="row4">'+
+      '<div class="field"><label>「聯絡資訊」標籤字級</label><input id="labelSize" type="number" value="'+(settings.labelSize||20)+'"></div>'+
+      '<div class="field"><label>姓名字級</label><input id="nameSize" type="number" value="'+settings.nameSize+'"></div>'+
+      '<div class="field"><label>職稱字級</label><input id="titleSize" type="number" value="'+settings.titleSize+'"></div>'+
+      '<div class="field"><label>電話字級</label><input id="phoneSize" type="number" value="'+settings.phoneSize+'"></div>'+
+    '</div>'+
+    '<div class="row4">'+
+      '<div class="field"><label>公司/團隊字級</label><input id="companySize" type="number" value="'+settings.companySize+'"></div>'+
+      '<div class="field"><label>姓名與職稱間距</label><input id="nameGap" type="number" value="'+settings.nameGap+'"></div>'+
+      '<div class="field"><label>下方資訊行距</label><input id="subGap" type="number" value="'+settings.subGap+'"></div>'+
+      '<div class="field"><label>左右內距</label><input id="paddingX" type="number" value="'+settings.paddingX+'"></div>'+
+    '</div>'+
+    '<div class="row4">'+
+      '<div class="field"><label>上下內距</label><input id="paddingY" type="number" value="'+settings.paddingY+'"></div>'+
+      '<div class="field"><label>字型</label><select id="fontFamily"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>MingLiU</option><option>DFKai-SB</option><option>Arial</option><option>Tahoma</option></select></div>'+
+      '<div class="field"><label>文字粗細</label><select id="fontWeight"><option value="normal">一般</option><option value="600">SemiBold</option><option value="bold">粗體</option><option value="900">超粗</option></select></div>'+
+      '<div class="field"><label>文字顏色</label><input id="fontColor" type="color" value="'+settings.color+'"></div>'+
+    '</div>'+
+    '<div class="row"><div class="field"><label>聯絡區背景</label><select id="bgEnabled"><option value="false">不要底色，使用公版白色框</option><option value="true">加半透明底色</option></select></div></div>'+
+    '<button id="saveSettingsBtn" class="btn primary '+(!user?'hidden':'')+'">儲存設定到雲端</button><p class="admin-only-note '+(user?'hidden':'')+'">請先登入後台，才能儲存欄位設定。</p></section>';
   }
   function logsHtml(){return '<section class="card"><h2>紀錄</h2><div class="log-list">'+(user?(logs.length?logs.map(function(l){return '<div>'+new Date(l.created_at).toLocaleString()+'｜'+escapeHtml(l.action)+'｜'+escapeHtml(l.detail||'')+'</div>';}).join(''):'尚無紀錄'):'請先登入後台查看紀錄。')+'</div></section>';}
 
@@ -115,12 +135,75 @@
   async function addContact(){if(!user)return notice('請先登入後台。'); var row={name:val('cName')||'未命名',title:val('cTitle'),phone:val('cPhone'),company:val('cCompany'),address:val('cAddress'),is_active:true}; var res=await sb.from('contacts').insert(row); if(res.error)return notice('新增失敗：'+res.error.message); await addLog('新增聯絡人',row.name); notice('已新增聯絡人。'); loadAll();}
   async function deleteContact(e){if(!confirm('確定刪除這位聯絡人？'))return; await sb.from('contacts').update({is_active:false}).eq('id',e.target.dataset.deleteContact); await addLog('刪除聯絡人',e.target.dataset.deleteContact); loadAll();}
   function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
-  async function saveSettings(){settings=Object.assign({},settings,{nameSize:+val('nameSize')||34,titleSize:+val('titleSize')||24,phoneSize:+val('phoneSize')||26,companySize:+val('companySize')||18,nameGap:+val('nameGap')||8,subGap:+val('subGap')||8,paddingX:+val('paddingX')||18,paddingY:+val('paddingY')||8,fontFamily:val('fontFamily')||'Microsoft JhengHei',fontWeight:val('fontWeight')||'bold',color:val('fontColor')||'#000000',bgEnabled:val('bgEnabled')==='true'}); var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()}); if(res.error)return notice('設定儲存失敗：'+res.error.message); await addLog('更新欄位設定',''); notice('設定已儲存。'); renderCanvas();}
+  async function saveSettings(){settings=Object.assign({},settings,{labelSize:+val('labelSize')||20,nameSize:+val('nameSize')||34,titleSize:+val('titleSize')||24,phoneSize:+val('phoneSize')||26,companySize:+val('companySize')||18,nameGap:+val('nameGap')||8,subGap:+val('subGap')||8,paddingX:+val('paddingX')||18,paddingY:+val('paddingY')||8,fontFamily:val('fontFamily')||'Microsoft JhengHei',fontWeight:val('fontWeight')||'bold',color:val('fontColor')||'#000000',bgEnabled:val('bgEnabled')==='true'}); var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()}); if(res.error)return notice('設定儲存失敗：'+res.error.message); await addLog('更新欄位設定',''); notice('設定已儲存。'); renderCanvas();}
 
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
   async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
-  async function drawContact(ctx){var c=contacts.find(function(x){return x.id===selectedContact;})||{}; var b=settings; if(b.bgEnabled){ctx.fillStyle='rgba(221,230,239,.88)';roundRect(ctx,b.x,b.y,b.w,b.h,6);ctx.fill();} var px=b.paddingX||18, py=b.paddingY||8; var nameSize=b.nameSize||34,titleSize=b.titleSize||24,phoneSize=b.phoneSize||26,companySize=b.companySize||18; var y1=b.y+py+nameSize, y2=y1+(b.nameGap||8)+phoneSize, y3=y2+(b.subGap||8)+companySize; var family=b.fontFamily||'Microsoft JhengHei', weight=b.fontWeight||'bold'; ctx.fillStyle=b.color||'#000'; ctx.font=weight+' '+nameSize+'px "'+family+'", Arial'; var nameText='聯絡資訊：'+(c.name||''); fitText(ctx,nameText,b.x+px,y1,b.w-165,nameSize+6); ctx.font=weight+' '+titleSize+'px "'+family+'", Arial'; var tw=ctx.measureText(nameText).width+12; fitText(ctx,c.title||'',b.x+px+tw,y1,b.w-165-tw,titleSize+6); ctx.font=weight+' '+phoneSize+'px "'+family+'", Arial'; fitText(ctx,c.phone||'',b.x+px,y2,b.w-170,phoneSize+4); ctx.font=weight+' '+companySize+'px "'+family+'", Arial'; fitText(ctx,(c.company||'吉富工商')+' '+(c.address||''),b.x+px,y3,b.w-170,companySize+4); var photo=await loadImage(assets.photo); if(photo){ctx.save();roundRect(ctx,b.photoX,b.photoY,b.photoSize,b.photoSize,0);ctx.clip();drawCover(ctx,photo,b.photoX,b.photoY,b.photoSize,b.photoSize);ctx.restore();} var qr=await loadImage(assets.qr); if(qr){ctx.fillStyle='#fff';ctx.fillRect(b.qrX-4,b.qrY-4,b.qrSize+8,b.qrSize+8);drawContain(ctx,qr,b.qrX,b.qrY,b.qrSize,b.qrSize);}}
+  async function drawContact(ctx){
+    var c=contacts.find(function(x){return x.id===selectedContact;})||{};
+    var b=settings;
+    if(b.bgEnabled){
+      ctx.fillStyle='rgba(221,230,239,.88)';
+      roundRect(ctx,b.x,b.y,b.w,b.h,6);
+      ctx.fill();
+    }
+
+    var px=b.paddingX||18, py=b.paddingY||8;
+    var labelSize=b.labelSize||20;
+    var nameSize=b.nameSize||34;
+    var titleSize=b.titleSize||24;
+    var phoneSize=b.phoneSize||26;
+    var companySize=b.companySize||18;
+    var family=b.fontFamily||'Microsoft JhengHei';
+    var weight=b.fontWeight||'bold';
+    var leftX=b.x+px;
+    var maxTextW=b.w-170;
+
+    ctx.fillStyle=b.color||'#000';
+
+    // 第一行：固定標籤，獨立字級，不與姓名/職稱連動
+    var labelY=b.y+py+labelSize;
+    ctx.font=weight+' '+labelSize+'px "'+family+'", Arial';
+    fitText(ctx,'聯絡資訊',leftX,labelY,maxTextW,labelSize+4);
+
+    // 第二行：姓名與職稱並排，但分開量測、分開字級，互不影響
+    var nameTitleY=labelY+(b.nameGap||8)+Math.max(nameSize,titleSize);
+    var titleGap=16;
+    var titleW=Math.max(72,Math.min(125,Math.floor(maxTextW*0.34)));
+    var nameW=maxTextW-titleW-titleGap;
+
+    ctx.font=weight+' '+nameSize+'px "'+family+'", Arial';
+    fitText(ctx,c.name||'',leftX,nameTitleY,nameW,nameSize+6);
+
+    ctx.font=weight+' '+titleSize+'px "'+family+'", Arial';
+    fitText(ctx,c.title||'',leftX+nameW+titleGap,nameTitleY,titleW,titleSize+6);
+
+    // 第三行：電話獨立字級
+    var phoneY=nameTitleY+(b.subGap||8)+phoneSize;
+    ctx.font=weight+' '+phoneSize+'px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',leftX,phoneY,maxTextW,phoneSize+4);
+
+    // 第四行：公司/團隊獨立字級；不顯示地址，避免塞爆右上角白框
+    var companyY=phoneY+(b.subGap||8)+companySize;
+    ctx.font=weight+' '+companySize+'px "'+family+'", Arial';
+    fitText(ctx,c.company||'吉富工商',leftX,companyY,maxTextW,companySize+4);
+
+    var photo=await loadImage(assets.photo);
+    if(photo){
+      ctx.save();
+      roundRect(ctx,b.photoX,b.photoY,b.photoSize,b.photoSize,0);
+      ctx.clip();
+      drawCover(ctx,photo,b.photoX,b.photoY,b.photoSize,b.photoSize);
+      ctx.restore();
+    }
+    var qr=await loadImage(assets.qr);
+    if(qr){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(b.qrX-4,b.qrY-4,b.qrSize+8,b.qrSize+8);
+      drawContain(ctx,qr,b.qrX,b.qrY,b.qrSize,b.qrSize);
+    }
+  }
   function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
