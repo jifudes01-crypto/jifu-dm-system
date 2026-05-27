@@ -1,4 +1,4 @@
-/* JIFU_FINAL_CONTACT_ASSETS_FROM_CURRENT_20260527 */
+/* JIFU_AUTO_RIGHT_SINGLE_ASSET_20260527 */
 (function(){
   'use strict';
   var app=document.getElementById('app');
@@ -8,13 +8,32 @@
   var dms=[],contacts=[],logs=[];
   var selectedDm='', selectedContact='';
   var assets={photo:'',qr:''};
-  var settings=defaultSettings();
+  var settings=normalizeSettings(defaultSettings());
   var pendingFiles=[];
 
-  function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118};}
+  function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1160,photoY:82,photoSize:92,qrX:1265,qrY:82,qrSize:92};}
   function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
   function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
   function notice(msg){var n=document.getElementById('notice'); if(n)n.textContent=msg;}
+  
+  function normalizeSettings(input){
+    var s=Object.assign(defaultSettings(),input||{});
+    s.photoSize=Number(s.photoSize)||92;
+    s.qrSize=Number(s.qrSize)||92;
+    s.photoX=Number(s.photoX)||1160;
+    s.photoY=Number(s.photoY)||82;
+    s.qrX=Number(s.qrX)||1265;
+    s.qrY=Number(s.qrY)||82;
+    var sameX=Math.abs(s.photoX-s.qrX)<12;
+    var sameY=Math.abs(s.photoY-s.qrY)<12;
+    var tooLarge=s.photoSize>105||s.qrSize>105;
+    if((sameX&&sameY)||tooLarge){
+      s.photoX=1160;s.photoY=82;s.photoSize=92;
+      s.qrX=1265;s.qrY=82;s.qrSize=92;
+    }
+    return s;
+  }
+
   function bucket(){return cfg.storageBucket||cfg.bucket||'dm-assets';}
   function safeName(name){var ext=(name.match(/\.[a-zA-Z0-9]+$/)||['.jpg'])[0].toLowerCase();return Date.now()+'_'+Math.random().toString(36).slice(2)+'_dm'+ext;}
 
@@ -43,7 +62,7 @@
       contacts=cRes.data||[];
       if(!selectedContact && contacts[0]) selectedContact=contacts[0].id;
       var sRes=await sb.from('app_settings').select('*').eq('key','contact_box').maybeSingle();
-      if(!sRes.error && sRes.data && sRes.data.value) settings=Object.assign(defaultSettings(),sRes.data.value);
+      if(!sRes.error && sRes.data && sRes.data.value) settings=normalizeSettings(sRes.data.value);
       if(user){var lRes=await sb.from('access_logs').select('*').order('created_at',{ascending:false}).limit(60); if(!lRes.error) logs=lRes.data||[];}
       render();
       renderCanvas();
@@ -106,93 +125,12 @@
   function options(items,selected,label,empty){return '<option value="">'+empty+'</option>'+items.map(function(x){return '<option value="'+x.id+'" '+(x.id===selected?'selected':'')+'>'+escapeHtml(x[label]||'未命名')+'</option>';}).join('');}
   function contactOptions(){return '<option value="">請選擇聯絡人</option>'+contacts.map(function(c){return '<option value="'+c.id+'" '+(c.id===selectedContact?'selected':'')+'>'+escapeHtml(c.name||'未命名')+'｜'+escapeHtml(c.title||'')+'｜'+escapeHtml(c.phone||'')+'</option>';}).join('');}
   function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span><div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
-  function contactCards(){
-    if (!contacts.length) return '<div class="empty">尚無通訊錄</div>';
-
-    return contacts.map(function(c){
-      var photoUrl = c.photo_url || c.avatar_url || '';
-      var qrUrl = c.qr_url || c.qr_code_url || '';
-      var hasPhoto = !!photoUrl;
-      var hasQr = !!qrUrl;
-
-      return (
-        '<article class="contact-card ' + (c.id === selectedContact ? 'active' : '') + '">' +
-          '<div class="contact-info">' +
-            '<h3>' + escapeHtml(c.name || '未命名') + '<span>' + escapeHtml(c.title || '') + '</span></h3>' +
-            '<p>' + escapeHtml(c.phone || '') + '<br>' + escapeHtml(c.company || '') + (c.address ? '<br>' + escapeHtml(c.address) : '') + '</p>' +
-            '<div class="contact-actions">' +
-              '<button class="btn line small" data-select-contact="' + c.id + '">前台預覽</button>' +
-              (user ? '<button class="btn danger small" data-delete-contact="' + c.id + '">刪除聯絡人</button>' : '') +
-            '</div>' +
-          '</div>' +
-
-          '<div class="asset-panel fixed-asset-panel">' +
-            '<div class="asset-box">' +
-              '<div class="asset-title">形象照</div>' +
-              '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
-              (user ?
-                '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-                (hasPhoto ? '<button class="asset-delete" data-delete-photo="' + c.id + '" type="button">刪除形象照</button>' : '<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>')
-                : ''
-              ) +
-            '</div>' +
-
-            '<div class="asset-box">' +
-              '<div class="asset-title">QR Code</div>' +
-              '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
-              (user ?
-                '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-                (hasQr ? '<button class="asset-delete" data-delete-qr="' + c.id + '" type="button">刪除 QR Code</button>' : '<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>')
-                : ''
-              ) +
-            '</div>' +
-          '</div>' +
-        '</article>'
-      );
-    }).join('');
-  }
+  function contactCards(){if(!contacts.length)return '<div class="empty">尚無通訊錄</div>';return contacts.map(function(c){return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'"><h3>'+escapeHtml(c.name||'未命名')+' '+escapeHtml(c.title||'')+'</h3><p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>'+(user?'<button class="btn danger" data-delete-contact="'+c.id+'">刪除</button>':'')+'</div>';}).join('');}
 
   async function login(){var email=document.getElementById('loginEmail').value.trim();var pw=document.getElementById('loginPassword').value;var res=await sb.auth.signInWithPassword({email:email,password:pw}); if(res.error)notice('登入失敗：'+res.error.message); else {user=res.data.user; notice('登入成功'); loadAll();}}
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
-  async function deleteContactAsset(e, contactId, kind){
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (!user) return notice('請先登入後台。');
-
-    var label = kind === 'qr' ? 'QR Code' : '形象照';
-    if (!confirm('確定要刪除這位業務的' + label + '？')) return;
-
-    notice(label + '正在刪除...');
-
-    var payload = {};
-    if (kind === 'qr') {
-      payload.qr_url = '';
-      payload.qr_code_url = '';
-    } else {
-      payload.photo_url = '';
-      payload.avatar_url = '';
-    }
-
-    var res = await sb.from('contacts').update(payload).eq('id', contactId);
-
-    if (res.error) {
-      var fallback = {};
-      if (kind === 'qr') fallback.qr_url = '';
-      else fallback.photo_url = '';
-      res = await sb.from('contacts').update(fallback).eq('id', contactId);
-    }
-
-    if (res.error) {
-      notice(label + '刪除失敗：' + res.error.message);
-      return;
-    }
-
-    await addLog('刪除業務' + label, contactId);
-    notice(label + '已刪除。');
-    loadAll();
-  }
-
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
   async function addContact(){if(!user)return notice('請先登入後台。'); var row={name:val('cName')||'未命名',title:val('cTitle'),phone:val('cPhone'),company:val('cCompany'),address:val('cAddress'),is_active:true}; var res=await sb.from('contacts').insert(row); if(res.error)return notice('新增失敗：'+res.error.message); await addLog('新增聯絡人',row.name); notice('已新增聯絡人。'); loadAll();}
   async function deleteContact(e){if(!confirm('確定刪除這位聯絡人？'))return; await sb.from('contacts').update({is_active:false}).eq('id',e.target.dataset.deleteContact); await addLog('刪除聯絡人',e.target.dataset.deleteContact); loadAll();}
@@ -202,8 +140,97 @@
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
   async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
-  async function drawContact(ctx){var c=contacts.find(function(x){return x.id===selectedContact;})||{}; var b=settings; if(b.bgEnabled){ctx.fillStyle='rgba(221,230,239,.88)';roundRect(ctx,b.x,b.y,b.w,b.h,6);ctx.fill();} var px=b.paddingX||18, py=b.paddingY||8; var nameSize=b.nameSize||34,titleSize=b.titleSize||24,phoneSize=b.phoneSize||26,companySize=b.companySize||18; var y1=b.y+py+nameSize, y2=y1+(b.nameGap||8)+phoneSize, y3=y2+(b.subGap||8)+companySize; var family=b.fontFamily||'Microsoft JhengHei', weight=b.fontWeight||'bold'; ctx.fillStyle=b.color||'#000'; ctx.font=weight+' '+nameSize+'px "'+family+'", Arial'; var nameText='聯絡資訊：'+(c.name||''); fitText(ctx,nameText,b.x+px,y1,b.w-165,nameSize+6); ctx.font=weight+' '+titleSize+'px "'+family+'", Arial'; var tw=ctx.measureText(nameText).width+12; fitText(ctx,c.title||'',b.x+px+tw,y1,b.w-165-tw,titleSize+6); ctx.font=weight+' '+phoneSize+'px "'+family+'", Arial'; fitText(ctx,c.phone||'',b.x+px,y2,b.w-170,phoneSize+4); ctx.font=weight+' '+companySize+'px "'+family+'", Arial'; fitText(ctx,(c.company||'吉富工商')+' '+(c.address||''),b.x+px,y3,b.w-170,companySize+4); var photo=await loadImage(assets.photo); if(photo){ctx.save();roundRect(ctx,b.photoX,b.photoY,b.photoSize,b.photoSize,0);ctx.clip();drawCover(ctx,photo,b.photoX,b.photoY,b.photoSize,b.photoSize);ctx.restore();} var qr=await loadImage(assets.qr); if(qr){ctx.fillStyle='#fff';ctx.fillRect(b.qrX-4,b.qrY-4,b.qrSize+8,b.qrSize+8);drawContain(ctx,qr,b.qrX,b.qrY,b.qrSize,b.qrSize);}}
-  function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
+  async function drawContact(ctx){
+    var c=getSelectedContact()||{};
+    var b=normalizeSettings(settings);
+
+    if(b.bgEnabled){
+      ctx.fillStyle='rgba(221,230,239,.88)';
+      roundRect(ctx,b.x,b.y,b.w,b.h,6);
+      ctx.fill();
+    }
+
+    var px=b.paddingX||18, py=b.paddingY||8;
+    var family=b.fontFamily||'Microsoft JhengHei';
+    var weight=b.fontWeight||'bold';
+    var color=b.color||'#000';
+
+    var photo=await loadImage(c.photo_url||c.avatar_url||'');
+    var qr=await loadImage(c.qr_url||c.qr_code_url||'');
+
+    // 自動圖片排版：
+    // 只有一張：靠右。
+    // 兩張都有：形象照在左、QR 在右。
+    var assetSize=92;
+    var assetGap=12;
+    var rightPad=16;
+    var assetY=b.y+Math.max(16,Math.round((b.h-assetSize)/2));
+    var rightX=b.x+b.w-rightPad-assetSize;
+    var photoBox=null, qrBox=null;
+
+    if(photo&&qr){
+      qrBox={x:rightX,y:assetY,size:assetSize};
+      photoBox={x:rightX-assetGap-assetSize,y:assetY,size:assetSize};
+    }else if(photo){
+      photoBox={x:rightX,y:assetY,size:assetSize};
+    }else if(qr){
+      qrBox={x:rightX,y:assetY,size:assetSize};
+    }
+
+    var reservedW=0;
+    if(photo&&qr) reservedW=assetSize*2+assetGap+rightPad+8;
+    else if(photo||qr) reservedW=assetSize+rightPad+8;
+
+    var textX=b.x+px;
+    var y=b.y+py;
+    var labelSize=b.labelSize||22;
+    var nameSize=b.nameSize||32;
+    var titleSize=b.titleSize||18;
+    var phoneSize=b.phoneSize||28;
+    var companySize=b.companySize||18;
+    var safeTextW=Math.max(80,b.w-px-reservedW);
+    var lineGap=b.nameGap||8;
+    var subGap=b.subGap||8;
+
+    ctx.fillStyle=color;
+
+    ctx.font=weight+' '+labelSize+'px "'+family+'", Arial';
+    fitText(ctx,'聯絡資訊：',textX,y+labelSize,safeTextW,labelSize+4);
+    y+=labelSize+lineGap;
+
+    ctx.font=weight+' '+nameSize+'px "'+family+'", Arial';
+    var nameText=c.name||'';
+    var nameMaxW=Math.floor(safeTextW*.56);
+    fitText(ctx,nameText,textX,y+nameSize,nameMaxW,nameSize+4);
+
+    var nameW=Math.min(ctx.measureText(nameText).width,nameMaxW);
+    ctx.font=weight+' '+titleSize+'px "'+family+'", Arial';
+    fitText(ctx,c.title||'',textX+nameW+12,y+nameSize,safeTextW-nameW-12,titleSize+4);
+    y+=nameSize+subGap;
+
+    ctx.font=weight+' '+phoneSize+'px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',textX,y+phoneSize,safeTextW,phoneSize+4);
+    y+=phoneSize+subGap;
+
+    ctx.font=weight+' '+companySize+'px "'+family+'", Arial';
+    fitText(ctx,(c.company||'吉富工商')+(c.address?' '+c.address:''),textX,y+companySize,safeTextW,companySize+4);
+
+    if(photoBox&&photo){
+      ctx.save();
+      roundRect(ctx,photoBox.x,photoBox.y,photoBox.size,photoBox.size,4);
+      ctx.clip();
+      drawPortraitCrop(ctx,photo,photoBox.x,photoBox.y,photoBox.size,photoBox.size);
+      ctx.restore();
+    }
+
+    if(qrBox&&qr){
+      ctx.fillStyle='#fff';
+      ctx.fillRect(qrBox.x-4,qrBox.y-4,qrBox.size+8,qrBox.size+8);
+      drawSquareContain(ctx,qr,qrBox.x,qrBox.y,qrBox.size,qrBox.size);
+    }
+  }
+
+function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
