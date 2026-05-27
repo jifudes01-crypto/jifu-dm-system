@@ -1,35 +1,27 @@
-/* JIFU_DIRECT_OVERLAY_FINAL */
+/* JIFU_CONTACT_TEXT_POSITION_FIX_FINAL */
 
-.contact-box{
-  position:absolute;
-}
+/* 只微調文字 */
 
 .contact-name{
-  font-size:54px;
+  font-size:48px;
   font-weight:800;
-  letter-spacing:0;
+  line-height:1;
 }
 
 .contact-title{
-  font-size:34px;
+  font-size:28px;
   font-weight:700;
+  line-height:1;
 }
 
 .contact-phone{
-  font-size:58px;
+  font-size:52px;
   font-weight:800;
+  line-height:1;
 }
 
 .contact-company{
-  font-size:48px;
+  font-size:42px;
   font-weight:800;
-}
-
-.contact-photo{
-  object-fit:cover;
-  object-position:center top;
-}
-
-.contact-qr{
-  object-fit:contain;
+  line-height:1;
 }
