@@ -88,3 +88,22 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(8,78,120,.16);bor
   .contact-card{grid-template-columns:1fr}
   .asset-panel{grid-template-columns:1fr 1fr}
 }
+
+
+/* JIFU_PHOTO_QR_SEPARATE_DELETE_FINAL_20260527 */
+.asset-delete{
+  display:block;
+  width:100%;
+  border:1px solid #f0caca;
+  background:#fff1f1;
+  color:#8a1d1d;
+  border-radius:10px;
+  padding:9px 10px;
+  font-weight:800;
+  font-size:13px;
+  margin-top:8px;
+  cursor:pointer;
+}
+.asset-delete:hover{
+  background:#ffe4e4;
+}

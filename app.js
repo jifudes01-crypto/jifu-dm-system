@@ -1,3 +1,4 @@
+/* JIFU_PHOTO_QR_SEPARATE_DELETE_FINAL_20260527 */
 /* JIFU_CONTACT_UPLOAD_REAL_FIX_20260527 */
 /* JIFU_CONTACT_COLON_FINAL_20260527 */
 /* JIFU_FORCE_UPDATE_20260527_FINAL - app.js */
@@ -49,7 +50,7 @@
       color: '#000000',
       bgEnabled: false,
 
-      photoX: 1268,
+      photoX: 1124,
       photoY: 68,
       photoSize: 118,
       qrX: 1268,
@@ -400,6 +401,14 @@
       input.onchange = function(e){ uploadContactAsset(e, input.dataset.qrContact, 'qr'); };
     });
 
+    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){
+      btn.onclick = function(e){ deleteContactAsset(e, btn.dataset.deletePhoto, 'photo'); };
+    });
+
+    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){
+      btn.onclick = function(e){ deleteContactAsset(e, btn.dataset.deleteQr, 'qr'); };
+    });
+
     document.querySelectorAll('[data-select-contact]').forEach(function(btn){
       btn.onclick = function(){
         selectedContact = btn.dataset.selectContact;
@@ -498,7 +507,9 @@
             '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(getContactQr(c)) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
             (user ?
               '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
-              '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>'
+              '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>' +
+              '<button class="asset-delete" data-delete-photo="' + c.id + '" type="button">刪除形象照</button>' +
+              '<button class="asset-delete" data-delete-qr="' + c.id + '" type="button">刪除 QR Code</button>'
               : ''
             ) +
           '</div>' +
@@ -642,7 +653,43 @@
     }
   }
 
-  async function deleteDm(e){
+  
+  async function deleteContactAsset(e, contactId, kind){
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!user) return notice('請先登入後台。');
+
+    var label = kind === 'qr' ? 'QR Code' : '形象照';
+    if (!confirm('確定要刪除這位業務的' + label + '？')) return;
+
+    var payload = {};
+    if (kind === 'qr') {
+      payload.qr_url = '';
+      payload.qr_code_url = '';
+    } else {
+      payload.photo_url = '';
+      payload.avatar_url = '';
+    }
+
+    var res = await sb.from('contacts').update(payload).eq('id', contactId);
+    if (res.error) {
+      // If some compatibility column does not exist, retry with only the primary column.
+      var fallback = {};
+      if (kind === 'qr') fallback.qr_url = '';
+      else fallback.photo_url = '';
+      res = await sb.from('contacts').update(fallback).eq('id', contactId);
+    }
+
+    if (res.error) {
+      notice(label + '刪除失敗：' + res.error.message);
+      return;
+    }
+
+    await addLog('刪除業務' + label, contactId);
+    notice(label + '已刪除。');
+    loadAll();
+  }
+
+async function deleteDm(e){
     e.stopPropagation();
     if (!confirm('確定要下架這張 DM？')) return;
 
