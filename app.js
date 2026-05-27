@@ -1,3 +1,4 @@
+/* JIFU_REMOVE_DUPLICATE_TEMPLATE_GRAPHICS_FINAL_20260527 */
 /* JIFU_GET_SELECTED_CONTACT_FIX_20260527 */
 /* JIFU_NEW_CONTACT_BOX_LAYOUT_20260527 */
 /* JIFU_CONTACT_COLON_FINAL_20260527 */
@@ -739,104 +740,81 @@
   }
 
   async function drawContact(ctx){
-    var c=getSelectedContact()||{};
-    var b=normalizeSettings(settings);
+    var c = getSelectedContact() || {};
+    var b = normalizeSettings(settings);
 
-    var boxX=b.x||950;
-    var boxY=b.y||58;
-    var boxW=b.w||452;
-    var boxH=b.h||142;
+    // 重要：DM 圖檔本身已經有「專業請找」、icon、底線、背景。
+    // 這裡只填入文字與圖片，不再重畫標題、icon、底線。
+    var boxX = b.x || 950;
+    var boxY = b.y || 58;
+    var boxW = b.w || 452;
 
-    var labelX=boxX+18;
-    var labelY=boxY+20;
-    var iconX=boxX+18;
-    var textX=boxX+46;
+    var family = b.fontFamily || 'Microsoft JhengHei';
+    var weight = b.fontWeight || 'bold';
+    var color = b.color || '#111';
+    ctx.fillStyle = color;
+    ctx.textBaseline = 'alphabetic';
 
-    var row1Y=boxY+66;
-    var row2Y=boxY+104;
-    var row3Y=boxY+142;
+    // 文字固定貼在模板原本三條線的上方。
+    var nameX = boxX + 96;
+    var titleX = boxX + 252;
+    var phoneX = boxX + 96;
+    var companyX = boxX + 96;
 
-    var photo=await loadImage(c.photo_url||c.avatar_url||'');
-    var qr=await loadImage(c.qr_url||c.qr_code_url||'');
+    var nameY = boxY + 82;
+    var phoneY = boxY + 132;
+    var companyY = boxY + 182;
 
-    var qrSize=106;
-    var photoW=130;
-    var photoH=132;
-    var gap=14;
-    var rightPad=18;
-    var assetY=boxY+24;
-    var photoX=boxX+boxW-rightPad-photoW;
-    var qrX=photoX-gap-qrSize;
+    var nameMax = 145;
+    var titleMax = 110;
+    var lineMax = 270;
 
-    var onlyOneX=boxX+boxW-rightPad-qrSize;
-    var photoBox=null, qrBox=null;
+    ctx.font = weight + ' 30px "' + family + '", Arial';
+    fitText(ctx, c.name || '', nameX, nameY, nameMax, 34);
 
-    if(photo&&qr){
-      qrBox={x:qrX,y:assetY+6,w:qrSize,h:qrSize};
-      photoBox={x:photoX,y:assetY,w:photoW,h:photoH};
-    }else if(photo){
-      photoBox={x:boxX+boxW-rightPad-photoW,y:assetY,w:photoW,h:photoH};
-    }else if(qr){
-      qrBox={x:onlyOneX,y:assetY+6,w:qrSize,h:qrSize};
-    }
+    ctx.font = weight + ' 24px "' + family + '", Arial';
+    fitText(ctx, c.title || '', titleX, nameY, titleMax, 28);
 
-    var reservedW=0;
-    if(photo&&qr) reservedW=boxW-(qrX-boxX)+6;
-    else if(photo) reservedW=photoW+rightPad+12;
-    else if(qr) reservedW=qrSize+rightPad+12;
+    ctx.font = weight + ' 34px "' + family + '", Arial';
+    fitText(ctx, c.phone || '', phoneX, phoneY, lineMax, 38);
 
-    var textRight=boxX+boxW-reservedW-12;
-    var lineW=Math.max(130,textRight-textX);
-    var family=b.fontFamily||'Microsoft JhengHei';
-    var color=b.color||'#111';
-    var weight=b.fontWeight||'bold';
+    ctx.font = weight + ' 32px "' + family + '", Arial';
+    fitText(ctx, c.company || '吉富工商', companyX, companyY, lineMax, 36);
 
-    ctx.fillStyle=color;
+    var photo = await loadImage(c.photo_url || c.avatar_url || '');
+    var qr = await loadImage(c.qr_url || c.qr_code_url || '');
 
-    ctx.font='900 26px "'+family+'", Arial';
-    fitText(ctx,'專業請找 ☞',labelX,labelY,Math.max(160,lineW+60),30);
+    // 圖片固定：雙圖時 QR 在左、形象照在右；單圖時靠右。
+    var qrSize = 106;
+    var photoW = 130;
+    var photoH = 132;
+    var rightPad = 18;
+    var gap = 14;
+    var assetY = boxY + 24;
+    var photoX = boxX + boxW - rightPad - photoW;
+    var qrX = photoX - gap - qrSize;
 
-    ctx.font='24px "Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji",Arial';
-    ctx.fillText('♟',iconX,row1Y);
-    ctx.fillText('☎',iconX,row2Y);
-    ctx.fillText('🏢',iconX,row3Y);
+    if (photo && qr) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(qrX - 4, assetY + 6 - 4, qrSize + 8, qrSize + 8);
+      drawSquareContain(ctx, qr, qrX, assetY + 6, qrSize, qrSize);
 
-    ctx.strokeStyle='rgba(0,0,0,.45)';
-    ctx.lineWidth=1.3;
-    [row1Y+7,row2Y+7,row3Y+7].forEach(function(y){
-      ctx.beginPath();
-      ctx.moveTo(textX,y);
-      ctx.lineTo(textX+lineW,y);
-      ctx.stroke();
-    });
-
-    ctx.font=weight+' 24px "'+family+'", Arial';
-    var nameText=c.name||'';
-    var nameMax=Math.min(116,lineW*.48);
-    fitText(ctx,nameText,textX,row1Y,nameMax,28);
-    var nameW=Math.min(ctx.measureText(nameText).width,nameMax);
-
-    ctx.font=weight+' 22px "'+family+'", Arial';
-    fitText(ctx,c.title||'',textX+nameW+16,row1Y,lineW-nameW-16,26);
-
-    ctx.font=weight+' 25px "'+family+'", Arial';
-    fitText(ctx,c.phone||'',textX,row2Y,lineW,29);
-
-    ctx.font=weight+' 25px "'+family+'", Arial';
-    fitText(ctx,c.company||'吉富工商',textX,row3Y,lineW,29);
-
-    if(qrBox&&qr){
-      ctx.fillStyle='#fff';
-      ctx.fillRect(qrBox.x-4,qrBox.y-4,qrBox.w+8,qrBox.h+8);
-      drawSquareContain(ctx,qr,qrBox.x,qrBox.y,qrBox.w,qrBox.h);
-    }
-
-    if(photoBox&&photo){
       ctx.save();
-      roundRect(ctx,photoBox.x,photoBox.y,photoBox.w,photoBox.h,4);
+      roundRect(ctx, photoX, assetY, photoW, photoH, 4);
       ctx.clip();
-      drawPortraitCrop(ctx,photo,photoBox.x,photoBox.y,photoBox.w,photoBox.h);
+      drawPortraitCrop(ctx, photo, photoX, assetY, photoW, photoH);
       ctx.restore();
+    } else if (photo) {
+      ctx.save();
+      roundRect(ctx, photoX, assetY, photoW, photoH, 4);
+      ctx.clip();
+      drawPortraitCrop(ctx, photo, photoX, assetY, photoW, photoH);
+      ctx.restore();
+    } else if (qr) {
+      var singleQrX = boxX + boxW - rightPad - qrSize;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(singleQrX - 4, assetY + 6 - 4, qrSize + 8, qrSize + 8);
+      drawSquareContain(ctx, qr, singleQrX, assetY + 6, qrSize, qrSize);
     }
   }
 
