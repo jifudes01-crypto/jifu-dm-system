@@ -1,3 +1,4 @@
+/* JIFU_CONTACT_UPLOAD_REAL_FIX_20260527 */
 /* JIFU_CONTACT_COLON_FINAL_20260527 */
 /* JIFU_FORCE_UPDATE_20260527_FINAL - app.js */
 (function(){
@@ -433,6 +434,16 @@
     return contacts.find(function(x){ return x.id === selectedContact; }) || null;
   }
 
+  function getContactPhoto(c){
+    c = c || {};
+    return c.photo_url || c.avatar_url || c.image_url || '';
+  }
+
+  function getContactQr(c){
+    c = c || {};
+    return c.qr_url || c.qr_code_url || c.qrcode_url || '';
+  }
+
   function contactMiniCard(c){
     if (!c) return '<div class="mini-contact empty">請先選擇業務聯絡人</div>';
 
@@ -444,8 +455,8 @@
           '<p>' + escapeHtml(c.phone || '') + '<br>' + escapeHtml(c.company || '') + '</p>' +
         '</div>' +
         '<div class="mini-assets">' +
-          (c.photo_url ? '<img src="' + escapeAttr(c.photo_url) + '" alt="形象照">' : '<span>無形象照</span>') +
-          (c.qr_url ? '<img src="' + escapeAttr(c.qr_url) + '" alt="QR Code">' : '<span>無 QR</span>') +
+          ((getContactPhoto(c) ? '<img src="' + escapeAttr(getContactPhoto(c)) + '" alt="形象照">' : '<span>無形象照</span>')) +
+          ((getContactQr(c) ? '<img src="' + escapeAttr(getContactQr(c)) + '" alt="QR Code">' : '<span>無 QR</span>')) +
         '</div>' +
       '</div>'
     );
@@ -469,8 +480,8 @@
     if (!contacts.length) return '<div class="empty">尚無通訊錄</div>';
 
     return contacts.map(function(c){
-      var hasPhoto = !!c.photo_url;
-      var hasQr = !!c.qr_url;
+      var hasPhoto = !!getContactPhoto(c);
+      var hasQr = !!getContactQr(c);
 
       return (
         '<article class="contact-card ' + (c.id === selectedContact ? 'active' : '') + '">' +
@@ -483,8 +494,8 @@
             '</div>' +
           '</div>' +
           '<div class="asset-panel">' +
-            '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(c.photo_url) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
-            '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(c.qr_url) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
+            '<div class="asset-preview">' + (hasPhoto ? '<img src="' + escapeAttr(getContactPhoto(c)) + '" alt="形象照">' : '<span>尚無形象照</span>') + '</div>' +
+            '<div class="asset-preview qr-preview">' + (hasQr ? '<img src="' + escapeAttr(getContactQr(c)) + '" alt="QR Code">' : '<span>尚無 QR</span>') + '</div>' +
             (user ?
               '<label class="mini-upload">上傳形象照<input data-photo-contact="' + c.id + '" type="file" accept="image/*"></label>' +
               '<label class="mini-upload">上傳 QR Code<input data-qr-contact="' + c.id + '" type="file" accept="image/*"></label>'
@@ -563,40 +574,72 @@
   }
 
   async function uploadContactAsset(e, contactId, kind){
-    if (!user) return notice('請先登入後台。');
+    if (!user) {
+      notice('請先登入後台，再上傳業務形象照 / QR Code。');
+      alert('請先登入後台，再上傳業務形象照 / QR Code。');
+      return;
+    }
 
     var file = (e.target.files || [])[0];
-    if (!file) return;
+    if (!file) {
+      notice('沒有選到檔案。');
+      return;
+    }
 
-    if (isUnsafeFileName(file.name)) {
-      notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：' + file.name);
+    var contact = contacts.find(function(x){ return x.id === contactId; });
+    var contactName = (contact && contact.name) ? contact.name : '此業務';
+    var label = kind === 'qr' ? 'QR Code' : '形象照';
+
+    notice('正在上傳 ' + contactName + ' 的' + label + '，請稍候...');
+
+    try {
+      var folder = kind === 'qr' ? 'qr' : 'photo';
+      var path = 'contacts/' + folder + '/' + contactId + '/' + safeName(file.name || (folder + '.jpg'), folder);
+
+      var up = await sb.storage.from(bucket()).upload(path, file, {
+        upsert:true,
+        contentType:file.type || 'image/jpeg'
+      });
+
+      if (up.error) {
+        console.error('Storage upload error:', up.error);
+        notice('上傳失敗：' + up.error.message);
+        alert('上傳失敗：' + up.error.message);
+        return;
+      }
+
+      var url = sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl;
+      var primaryField = kind === 'qr' ? 'qr_url' : 'photo_url';
+      var altField = kind === 'qr' ? 'qr_code_url' : 'avatar_url';
+      var payload = {};
+      payload[primaryField] = url;
+
+      var res = await sb.from('contacts').update(payload).eq('id', contactId);
+
+      if (res.error) {
+        console.warn('Primary contact image field update failed, retrying alias field:', res.error);
+        var payload2 = {};
+        payload2[altField] = url;
+        res = await sb.from('contacts').update(payload2).eq('id', contactId);
+      }
+
+      if (res.error) {
+        console.error('Contact update error:', res.error);
+        notice('通訊錄圖片更新失敗：' + res.error.message + '。請確認 contacts 表有 photo_url / qr_url 欄位。');
+        alert('通訊錄圖片更新失敗：' + res.error.message);
+        return;
+      }
+
+      await addLog(kind === 'qr' ? '更新業務QR' : '更新業務形象照', contactName);
+      notice(contactName + ' 的' + label + '已更新，前台選到此業務會自動帶入。');
+      await loadAll();
+    } catch (err) {
+      console.error(err);
+      notice('上傳發生錯誤：' + (err.message || err));
+      alert('上傳發生錯誤：' + (err.message || err));
+    } finally {
       e.target.value = '';
-      return;
     }
-
-    var folder = kind === 'qr' ? 'qr' : 'photo';
-    var path = 'contacts/' + folder + '/' + contactId + '/' + safeName(file.name, folder);
-
-    var up = await sb.storage.from(bucket()).upload(path, file, {upsert:true, contentType:file.type || 'image/jpeg'});
-    if (up.error) {
-      notice('上傳失敗：' + up.error.message);
-      return;
-    }
-
-    var url = sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl;
-    var field = kind === 'qr' ? 'qr_url' : 'photo_url';
-    var payload = {};
-    payload[field] = url;
-
-    var res = await sb.from('contacts').update(payload).eq('id', contactId);
-    if (res.error) {
-      notice('通訊錄圖片更新失敗：' + res.error.message);
-      return;
-    }
-
-    await addLog(kind === 'qr' ? '更新業務QR' : '更新業務形象照', contactId);
-    notice(kind === 'qr' ? 'QR Code 已更新。' : '形象照已更新。');
-    loadAll();
   }
 
   async function deleteDm(e){
@@ -780,8 +823,8 @@
     ctx.font = weight + ' ' + companySize + 'px "' + family + '", Arial';
     fitText(ctx, (c.company || '吉富工商') + (c.address ? ' ' + c.address : ''), textX, y + companySize, safeTextW, companySize + 4);
 
-    var photoSrc = c.photo_url || '';
-    var qrSrc = c.qr_url || '';
+    var photoSrc = getContactPhoto(c) || '';
+    var qrSrc = getContactQr(c) || '';
 
     var photo = await loadImage(photoSrc);
     if (photo) {
