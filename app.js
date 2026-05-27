@@ -1,4 +1,4 @@
-/* JIFU_REAL_FINAL_SYNC_PREVIEW_NO_FRONT_UPLOAD_20260527 */
+/* JIFU_IDEAL_LAYOUT_FINAL_20260527 */
 (function(){
   'use strict';
   var app=document.getElementById('app');
@@ -68,7 +68,7 @@
   }
 
   function frontHtml(){
-    var c = getSelectedContact();
+    var c = getSelectedContact ? getSelectedContact() : null;
     var photoUrl = c ? (c.photo_url || c.avatar_url || '') : '';
     var qrUrl = c ? (c.qr_url || c.qr_code_url || '') : '';
 
@@ -106,7 +106,7 @@
 
     if((el=document.getElementById('loginBtn'))) el.onclick=login;
     if((el=document.getElementById('logoutBtn'))) el.onclick=logout;
-    if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); document.getElementById('pendingInfo').textContent='已選擇 '+pendingFiles.length+' 張 DM';};
+    if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); var p=document.getElementById('pendingInfo'); if(p)p.textContent='已選擇 '+pendingFiles.length+' 張 DM';};
     if((el=document.getElementById('uploadBtn'))) el.onclick=uploadDms;
     if((el=document.getElementById('addContactBtn'))) el.onclick=addContact;
     if((el=document.getElementById('saveSettingsBtn'))) el.onclick=saveSettings;
@@ -141,6 +141,7 @@
   function getSelectedContact(){
     return contacts.find(function(x){return x.id===selectedContact;}) || contacts[0] || null;
   }
+
   function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span><div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
   function contactCards(){
     if(!contacts.length) return '<div class="empty">尚無通訊錄</div>';
@@ -220,32 +221,48 @@
   async function drawContact(ctx){
     var c=getSelectedContact()||{};
     var family=settings.fontFamily||'Microsoft JhengHei';
-    var weight=settings.fontWeight||'bold';
-    ctx.fillStyle=settings.color||'#111';
+    var weight='900';
+    ctx.fillStyle=settings.color||'#000';
     ctx.textBaseline='alphabetic';
 
-    // 文字同步到預覽圖：不重畫模板上的標題/icon/線條。
-    ctx.font=weight+' 26px "'+family+'", Arial';
-    fitText(ctx,c.name||'',1008,122,160,30);
-    ctx.font=weight+' 22px "'+family+'", Arial';
-    fitText(ctx,c.title||'',1188,122,120,26);
-    ctx.font=weight+' 30px "'+family+'", Arial';
-    fitText(ctx,c.phone||'',1008,170,300,34);
-    ctx.font=weight+' 28px "'+family+'", Arial';
-    fitText(ctx,c.company||'吉富工商',1008,220,300,32);
+    // 依照使用者提供的理想圖：
+    // 左側大字資訊、中間 QR、右側大形象照。
+    // 不重畫模板標題、背景、線條。
+
+    var nameX=1026;
+    var titleX=1208;
+    var phoneX=1026;
+    var companyX=1026;
+
+    var nameY=142;
+    var phoneY=205;
+    var companyY=268;
+
+    ctx.font=weight+' 42px "'+family+'", Arial';
+    fitText(ctx,c.name||'',nameX,nameY,170,46);
+
+    ctx.font=weight+' 38px "'+family+'", Arial';
+    fitText(ctx,c.title||'',titleX,nameY,120,42);
+
+    ctx.font=weight+' 43px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',phoneX,phoneY,300,48);
+
+    ctx.font=weight+' 42px "'+family+'", Arial';
+    fitText(ctx,c.company||'吉富工商',companyX,companyY,310,46);
 
     var photo=await loadImage(c.photo_url||c.avatar_url||'');
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    // 大框 = 形象照；小框 = QR。
-    var qrX=1180, qrY=166, qrSize=90;
-    var photoX=1278, photoY=68, photoW=150, photoH=188;
+    // 理想圖位置：QR 在文字右側中間；形象照在最右且較大。
+    var qrX=1240, qrY=104, qrSize=136;
+    var photoX=1364, photoY=74, photoW=176, photoH=254;
 
     if(qr){
       ctx.fillStyle='#fff';
       ctx.fillRect(qrX-4,qrY-4,qrSize+8,qrSize+8);
       drawSquareContain(ctx,qr,qrX,qrY,qrSize,qrSize);
     }
+
     if(photo){
       ctx.save();
       roundRect(ctx,photoX,photoY,photoW,photoH,4);
