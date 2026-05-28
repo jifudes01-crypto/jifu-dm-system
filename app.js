@@ -1,3 +1,4 @@
+/* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
 /* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
 /* JIFU_IDEAL_LAYOUT_FINAL_20260527 */
 (function(){
@@ -262,8 +263,8 @@
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
     // 右側圖像區：全部限制在 1456px 畫布內。
-    var qrX=1156, qrY=106, qrSize=116;
-    var photoX=1284, photoY=62, photoW=144, photoH=210;
+    var qrX=1126, qrY=102, qrSize=126;
+    var photoX=1248, photoY=58, photoW=178, photoH=244;
 
     if(qr){
       ctx.fillStyle='#fff';
