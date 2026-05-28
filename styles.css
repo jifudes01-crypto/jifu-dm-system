@@ -1,3 +1,4 @@
+/* JIFU_PHOTO_FREE_SCALE_NO_JUMP_20260528 */
 /* JIFU_PHOTO_CONTAIN_NO_CROP_FIX_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
 /* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
@@ -80,4 +81,14 @@
 .qr-adjuster input[type="range"]{
   width:100%;
   padding:0;
+}
+
+
+/* JIFU_PHOTO_FREE_SCALE_NO_JUMP_20260528 */
+.photo-adjuster,
+.qr-adjuster{
+  scroll-margin-top:120px;
+}
+.adjust-control{
+  align-items:center;
 }

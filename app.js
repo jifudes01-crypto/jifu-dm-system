@@ -1,3 +1,4 @@
+/* JIFU_PHOTO_FREE_SCALE_NO_JUMP_20260528 */
 /* JIFU_PHOTO_CONTAIN_NO_CROP_FIX_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
 /* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
@@ -224,6 +225,26 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
+  function saveScrollNow(){
+    return {
+      x: window.scrollX || window.pageXOffset || 0,
+      y: window.scrollY || window.pageYOffset || 0
+    };
+  }
+
+  function restoreScrollNow(pos){
+    if(!pos)return;
+    setTimeout(function(){ window.scrollTo(pos.x,pos.y); }, 0);
+    setTimeout(function(){ window.scrollTo(pos.x,pos.y); }, 80);
+    setTimeout(function(){ window.scrollTo(pos.x,pos.y); }, 180);
+  }
+
+  async function loadAllKeepScroll(){
+    var pos=saveScrollNow();
+    await loadAll();
+    restoreScrollNow(pos);
+  }
+
   function keepScrollPosition(fn){
     var x = window.scrollX || window.pageXOffset || 0;
     var y = window.scrollY || window.pageYOffset || 0;
@@ -274,9 +295,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('照片位置重設失敗：'+res.error.message);
     else {
       notice('照片位置已重設。');
-      await loadAll();
-      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
-      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+      await loadAllKeepScroll();
     }
   }
 
@@ -321,9 +340,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('QR 位置重設失敗：'+res.error.message);
     else {
       notice('QR 位置已重設。');
-      await loadAll();
-      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
-      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+      await loadAllKeepScroll();
     }
   }
 
@@ -349,9 +366,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     notice(kind==='qr'?'QR Code 已更新。':'形象照已更新。');
     var scrollX = window.scrollX || window.pageXOffset || 0;
     var scrollY = window.scrollY || window.pageYOffset || 0;
-    await loadAll();
-    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
-    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+    await loadAllKeepScroll();
   }
 
   async function deleteContactAsset(e,contactId,kind){
@@ -372,9 +387,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     notice(label+'已刪除。');
     var scrollX = window.scrollX || window.pageXOffset || 0;
     var scrollY = window.scrollY || window.pageYOffset || 0;
-    await loadAll();
-    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
-    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+    await loadAllKeepScroll();
   }
 
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
@@ -443,11 +456,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     }
 
     if(photo){
-      ctx.save();
-      roundRect(ctx,photoX,photoY,photoW,photoH,4);
-      ctx.clip();
-      drawPortraitCropAdjusted(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
-      ctx.restore();
+      drawPortraitFreeScale(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
     }
   }
 
@@ -471,6 +480,28 @@ function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return;
     var dy=y+(size-dh)/2;
     ctx.drawImage(img,dx,dy,dw,dh);
     ctx.restore();
+  }
+
+function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
+    if(!img)return;
+    var iw=img.naturalWidth||img.width;
+    var ih=img.naturalHeight||img.height;
+    if(!iw||!ih)return;
+
+    // 真正不裁切：
+    // 1. 以 contain 為基準，整張圖完整顯示。
+    // 2. 縮放只做等比例縮放。
+    // 3. 左右/上下只做位移。
+    // 4. 不使用 clip，不裁掉任何一邊。
+    var baseScale=Math.min(w/iw,h/ih);
+    var scale=baseScale*(scaleAdjust||1);
+
+    var dw=iw*scale;
+    var dh=ih*scale;
+    var dx=x+(w-dw)/2+Number(offsetX||0);
+    var dy=y+(h-dh)/2+Number(offsetY||0);
+
+    ctx.drawImage(img,dx,dy,dw,dh);
   }
 
 function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
