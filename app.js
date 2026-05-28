@@ -1,4 +1,13 @@
-/* JIFU_FORCE_BOOT_REPAIR_20260528 */
+/* JIFU_RESTORE_FEATURES_CLEAN_20260528 */
+/* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
+/* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
+/* JIFU_QR_PHOTO_SCROLL_FINAL_20260528 */
+/* JIFU_QR_PHOTO_SAFE_LAYOUT_20260528 */
+/* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
+/* JIFU_PHOTO_POSITION_EDITOR_20260528 */
+/* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
+/* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
+/* JIFU_IDEAL_LAYOUT_FINAL_20260527 */
 (function(){
   'use strict';
   var app=document.getElementById('app');
@@ -12,7 +21,12 @@
   var pendingFiles=[];
 
   function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118};}
-  function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+    function numOr(v, fallback){
+    var n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
   function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
   function notice(msg){var n=document.getElementById('notice'); if(n)n.textContent=msg;}
   function bucket(){return cfg.storageBucket||cfg.bucket||'dm-assets';}
@@ -21,43 +35,14 @@
   window.addEventListener('error',function(e){console.error(e.error||e.message);});
   window.addEventListener('unhandledrejection',function(e){console.error(e.reason); notice('發生錯誤：'+((e.reason&&e.reason.message)||e.reason||'未知錯誤'));});
 
-  async function init(){
-    try{
-      if(!app){
-        app=document.getElementById('app');
-      }
-
-      // 先保底建立畫面，不讓使用者永遠卡在載入中。
-      if(app){
-        app.innerHTML='<div class="notice">正在連線雲端資料庫...</div>';
-      }
-
-      await initSupabase();
-      await loadAll();
-
-      if(!selectedDm && dms[0]) selectedDm=dms[0].id;
-      if(!selectedContact && contacts[0]) selectedContact=contacts[0].id;
-
-      render();
-      setTimeout(renderCanvas,80);
-    }catch(err){
-      console.error(err);
-
-      // 即使資料庫或某段功能錯誤，也強制打開主畫面。
-      try{
-        if(!selectedDm && dms && dms[0]) selectedDm=dms[0].id;
-        if(!selectedContact && contacts && contacts[0]) selectedContact=contacts[0].id;
-        render();
-        setTimeout(renderCanvas,120);
-      }catch(e){
-        console.error(e);
-        if(app){
-          app.innerHTML='<div class="card"><h2>系統載入錯誤</h2><p class="muted">請截圖這段錯誤給我：</p><pre style="white-space:pre-wrap;color:#8a1d1d;background:#fff1f1;padding:12px;border-radius:12px;">'+escapeHtml(String(err && (err.message || err) || err))+'</pre></div>';
-        }
-      }
-
-      notice('發生錯誤：'+String(err && (err.message || err) || err));
+  function init(){
+    if(!cfg.url || !cfg.anonKey || !window.supabase){
+      app.innerHTML='<div class="fatal-panel"><h2>Supabase 尚未設定完成</h2><p>請檢查 config.js 是否有 url 與 anonKey，且金鑰必須在同一行。</p></div>';
+      return;
     }
+    sb=window.supabase.createClient(cfg.url,cfg.anonKey);
+    sb.auth.getSession().then(function(res){user=res.data.session&&res.data.session.user||null; return loadAll();});
+    sb.auth.onAuthStateChange(function(evt,session){user=session&&session.user||null; loadAll();});
   }
 
   async function loadAll(){
@@ -97,7 +82,23 @@
   }
 
   function frontHtml(){
-    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2><div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select></div><div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄。</small></div><label class="upload">上傳形象照<input id="photoInput" type="file" accept="image/*"></label><div id="photoPreview">'+(assets.photo?'<img class="preview-img" src="'+assets.photo+'">':'')+'</div><label class="upload">上傳 QR Code<input id="qrInput" type="file" accept="image/*"></label><div id="qrPreview">'+(assets.qr?'<img class="preview-img" src="'+assets.qr+'">':'')+'</div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、選擇聯絡人、上傳形象照與 QR Code，即可下載完整 DM。聯絡資訊只會套在右上角白色框，不會跑到物件區。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
+    var c = getSelectedContact ? getSelectedContact() : null;
+    var photoUrl = c ? (c.photo_url || c.avatar_url || '') : '';
+    var qrUrl = c ? (c.qr_url || c.qr_code_url || '') : '';
+
+    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>' +
+      '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select></div>' +
+      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small></div>' +
+      '<div class="mini-contact">' +
+        '<div><strong>' + escapeHtml(c ? (c.name || '未命名') : '尚未選擇') + '</strong><span>' + escapeHtml(c ? (c.title || '') : '') + '</span><p>' + escapeHtml(c ? (c.phone || '') : '') + '<br>' + escapeHtml(c ? (c.company || '') : '') + '</p></div>' +
+        '<div class="mini-assets">' +
+          (photoUrl ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>無形象照</span>') +
+          (qrUrl ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>無 QR</span>') +
+        '</div>' +
+      '</div>' +
+      '<button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button>' +
+      '</section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM 與自己的姓名，即可自動帶入聯絡資訊、形象照與 QR Code，並下載完整 DM。上傳與刪除請到後台通訊錄管理。</p></section></aside>' +
+      '<section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
   }
   function adminHtml(){
     return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">請使用英文檔名，例如 A26-5_DM01.jpg。不要用中文、空格、單引號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
@@ -113,20 +114,65 @@
   function bindPage(){
     var el;
     if((el=document.getElementById('dmSelect'))) el.onchange=function(){selectedDm=this.value; render(); renderCanvas();};
-    if((el=document.getElementById('contactSelect'))) el.onchange=function(){selectedContact=this.value; renderCanvas();};
+    if((el=document.getElementById('contactSelect'))) el.onchange=function(){selectedContact=this.value; render(); renderCanvas();};
     if((el=document.getElementById('renderBtn'))) el.onclick=renderCanvas;
     if((el=document.getElementById('downloadBtn'))) el.onclick=downloadCanvas;
-    if((el=document.getElementById('photoInput'))) el.onchange=function(e){readFile(e.target.files[0]).then(function(url){assets.photo=url;render();renderCanvas();});};
-    if((el=document.getElementById('qrInput'))) el.onchange=function(e){readFile(e.target.files[0]).then(function(url){assets.qr=url;render();renderCanvas();});};
+
     if((el=document.getElementById('loginBtn'))) el.onclick=login;
     if((el=document.getElementById('logoutBtn'))) el.onclick=logout;
-    if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); document.getElementById('pendingInfo').textContent='已選擇 '+pendingFiles.length+' 張 DM';};
+    if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); var p=document.getElementById('pendingInfo'); if(p)p.textContent='已選擇 '+pendingFiles.length+' 張 DM';};
     if((el=document.getElementById('uploadBtn'))) el.onclick=uploadDms;
     if((el=document.getElementById('addContactBtn'))) el.onclick=addContact;
     if((el=document.getElementById('saveSettingsBtn'))) el.onclick=saveSettings;
+
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
     document.querySelectorAll('[data-delete-dm]').forEach(function(btn){btn.onclick=deleteDm;});
     document.querySelectorAll('[data-delete-contact]').forEach(function(btn){btn.onclick=deleteContact;});
+
+    document.querySelectorAll('[data-select-contact]').forEach(function(btn){
+      btn.onclick=function(){selectedContact=btn.dataset.selectContact;view='front';render();setTimeout(renderCanvas,50);};
+    });
+    document.querySelectorAll('[data-photo-contact]').forEach(function(input){
+      input.onchange=function(e){uploadContactAsset(e,input.dataset.photoContact,'photo');};
+    });
+    document.querySelectorAll('[data-qr-contact]').forEach(function(input){
+      input.onchange=function(e){uploadContactAsset(e,input.dataset.qrContact,'qr');};
+    });
+    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){
+      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deletePhoto,'photo');};
+    });
+    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){
+      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deleteQr,'qr');};
+    });
+
+    document.querySelectorAll('[data-photo-adjust]').forEach(function(input){
+      input.oninput=function(){ previewPhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-photo-adjust-number]').forEach(function(input){
+      input.oninput=function(){ previewPhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-reset-photo-adjust]').forEach(function(btn){
+      btn.onclick=function(){ resetPhotoAdjust(btn.dataset.resetPhotoAdjust); };
+    });
+
+    document.querySelectorAll('[data-qr-adjust]').forEach(function(input){
+      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-qr-adjust-number]').forEach(function(input){
+      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-reset-qr-adjust]').forEach(function(btn){
+      btn.onclick=function(){ resetQrAdjust(btn.dataset.resetQrAdjust); };
+    });
+
     var ff=document.getElementById('fontFamily'); if(ff)ff.value=settings.fontFamily;
     var fw=document.getElementById('fontWeight'); if(fw)fw.value=settings.fontWeight;
     var bg=document.getElementById('bgEnabled'); if(bg)bg.value=String(!!settings.bgEnabled);
@@ -134,13 +180,203 @@
 
   function options(items,selected,label,empty){return '<option value="">'+empty+'</option>'+items.map(function(x){return '<option value="'+x.id+'" '+(x.id===selected?'selected':'')+'>'+escapeHtml(x[label]||'未命名')+'</option>';}).join('');}
   function contactOptions(){return '<option value="">請選擇聯絡人</option>'+contacts.map(function(c){return '<option value="'+c.id+'" '+(c.id===selectedContact?'selected':'')+'>'+escapeHtml(c.name||'未命名')+'｜'+escapeHtml(c.title||'')+'｜'+escapeHtml(c.phone||'')+'</option>';}).join('');}
+  function getSelectedContact(){
+    return contacts.find(function(x){return x.id===selectedContact;}) || contacts[0] || null;
+  }
+
   function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span><div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
-  function contactCards(){if(!contacts.length)return '<div class="empty">尚無通訊錄</div>';return contacts.map(function(c){return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'"><h3>'+escapeHtml(c.name||'未命名')+' '+escapeHtml(c.title||'')+'</h3><p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>'+(user?'<button class="btn danger" data-delete-contact="'+c.id+'">刪除</button>':'')+'</div>';}).join('');}
+  function contactCards(){
+    if(!contacts.length) return '<div class="empty">尚無通訊錄</div>';
+    return contacts.map(function(c){
+      var photoUrl=c.photo_url||c.avatar_url||'';
+      var qrUrl=c.qr_url||c.qr_code_url||'';
+      var hasPhoto=!!photoUrl;
+      var hasQr=!!qrUrl;
+      var ox=numOr(c.photo_offset_x,0);
+      var oy=numOr(c.photo_offset_y,0);
+      var sc=numOr(c.photo_scale,1);
+      return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'">' +
+        '<div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3>' +
+        '<p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>' +
+        '<div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div>' +
+        '<div class="asset-panel fixed-asset-panel">' +
+          '<div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>' +
+            (user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'') +
+            (user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div>' +
+              '<label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label>' +
+              '<label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label>' +
+              '<label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label>' +
+              '<button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'') +
+          '</div>' +
+          '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
+            (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'') +
+            (user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div>' +
+              '<label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label>' +
+              '<label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label>' +
+              '<label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label>' +
+              '<button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'') +
+          '</div>' +
+        '</div></div>';
+    }).join('');
+  }
 
   async function login(){var email=document.getElementById('loginEmail').value.trim();var pw=document.getElementById('loginPassword').value;var res=await sb.auth.signInWithPassword({email:email,password:pw}); if(res.error)notice('登入失敗：'+res.error.message); else {user=res.data.user; notice('登入成功'); loadAll();}}
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
+  function keepScrollPosition(fn){
+    var x = window.scrollX || window.pageXOffset || 0;
+    var y = window.scrollY || window.pageYOffset || 0;
+    var result = fn();
+    setTimeout(function(){ window.scrollTo(x,y); }, 0);
+    setTimeout(function(){ window.scrollTo(x,y); }, 60);
+    return result;
+  }
+
+  function updateLocalContactPhotoAdjust(contactId,field,value){
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c)c[field]=Number(value);
+    if(selectedContact===contactId && view==='front') setTimeout(renderCanvas,30);
+  }
+
+  function previewPhotoAdjust(contactId,field,value){
+    updateLocalContactPhotoAdjust(contactId,field,value);
+
+    document.querySelectorAll('[data-photo-adjust="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+    document.querySelectorAll('[data-photo-adjust-number="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+  }
+
+  async function savePhotoAdjust(contactId,field,value){
+    if(!user)return notice('請先登入後台。');
+    var payload={};
+    payload[field]=Number(value);
+    updateLocalContactPhotoAdjust(contactId,field,value);
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('照片微調儲存失敗：'+res.error.message);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 80);
+  }
+
+  async function resetPhotoAdjust(contactId){
+    if(!user)return notice('請先登入後台。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var payload={photo_offset_x:0,photo_offset_y:0,photo_scale:1};
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c){c.photo_offset_x=0;c.photo_offset_y=0;c.photo_scale=1;}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('照片位置重設失敗：'+res.error.message);
+    else {
+      notice('照片位置已重設。');
+      await loadAll();
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+    }
+  }
+
+  function updateLocalContactQrAdjust(contactId,field,value){
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c)c[field]=Number(value);
+    if(selectedContact===contactId && view==='front') setTimeout(renderCanvas,30);
+  }
+
+  function previewQrAdjust(contactId,field,value){
+    updateLocalContactQrAdjust(contactId,field,value);
+
+    document.querySelectorAll('[data-qr-adjust="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+    document.querySelectorAll('[data-qr-adjust-number="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+  }
+
+  async function saveQrAdjust(contactId,field,value){
+    if(!user)return notice('請先登入後台。');
+    var payload={};
+    payload[field]=Number(value);
+    updateLocalContactQrAdjust(contactId,field,value);
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('QR 微調儲存失敗：'+res.error.message);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 80);
+  }
+
+  async function resetQrAdjust(contactId){
+    if(!user)return notice('請先登入後台。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var payload={qr_offset_x:0,qr_offset_y:0,qr_scale:1};
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c){c.qr_offset_x=0;c.qr_offset_y=0;c.qr_scale=1;}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('QR 位置重設失敗：'+res.error.message);
+    else {
+      notice('QR 位置已重設。');
+      await loadAll();
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+    }
+  }
+
+  async function uploadContactAsset(e,contactId,kind){
+    if(!user) return notice('請先登入後台。');
+    var file=(e.target.files||[])[0];
+    if(!file) return;
+    var folder=kind==='qr'?'qr':'photo';
+    var path='contacts/'+folder+'/'+contactId+'/'+safeName(file.name,folder);
+    var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'});
+    if(up.error){notice('上傳失敗：'+up.error.message);return;}
+    var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl;
+    var payload={};
+    if(kind==='qr'){payload.qr_url=url;payload.qr_code_url=url;}else{payload.photo_url=url;payload.avatar_url=url;}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error){
+      var fallback={};
+      if(kind==='qr')fallback.qr_url=url;else fallback.photo_url=url;
+      res=await sb.from('contacts').update(fallback).eq('id',contactId);
+    }
+    if(res.error){notice('通訊錄圖片更新失敗：'+res.error.message);return;}
+    await addLog(kind==='qr'?'更新業務QR':'更新業務形象照',contactId);
+    notice(kind==='qr'?'QR Code 已更新。':'形象照已更新。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    await loadAll();
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+  }
+
+  async function deleteContactAsset(e,contactId,kind){
+    if(e&&e.stopPropagation)e.stopPropagation();
+    if(!user) return notice('請先登入後台。');
+    var label=kind==='qr'?'QR Code':'形象照';
+    if(!confirm('確定要刪除這位業務的'+label+'？'))return;
+    var payload={};
+    if(kind==='qr'){payload.qr_url='';payload.qr_code_url='';}else{payload.photo_url='';payload.avatar_url='';}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error){
+      var fallback={};
+      if(kind==='qr')fallback.qr_url='';else fallback.photo_url='';
+      res=await sb.from('contacts').update(fallback).eq('id',contactId);
+    }
+    if(res.error){notice(label+'刪除失敗：'+res.error.message);return;}
+    await addLog('刪除業務'+label,contactId);
+    notice(label+'已刪除。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    await loadAll();
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+  }
+
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
   async function addContact(){if(!user)return notice('請先登入後台。'); var row={name:val('cName')||'未命名',title:val('cTitle'),phone:val('cPhone'),company:val('cCompany'),address:val('cAddress'),is_active:true}; var res=await sb.from('contacts').insert(row); if(res.error)return notice('新增失敗：'+res.error.message); await addLog('新增聯絡人',row.name); notice('已新增聯絡人。'); loadAll();}
   async function deleteContact(e){if(!confirm('確定刪除這位聯絡人？'))return; await sb.from('contacts').update({is_active:false}).eq('id',e.target.dataset.deleteContact); await addLog('刪除聯絡人',e.target.dataset.deleteContact); loadAll();}
@@ -150,11 +386,196 @@
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
   async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
-  async function drawContact(ctx){var c=contacts.find(function(x){return x.id===selectedContact;})||{}; var b=settings; if(b.bgEnabled){ctx.fillStyle='rgba(221,230,239,.88)';roundRect(ctx,b.x,b.y,b.w,b.h,6);ctx.fill();} var px=b.paddingX||18, py=b.paddingY||8; var nameSize=b.nameSize||34,titleSize=b.titleSize||24,phoneSize=b.phoneSize||26,companySize=b.companySize||18; var y1=b.y+py+nameSize, y2=y1+(b.nameGap||8)+phoneSize, y3=y2+(b.subGap||8)+companySize; var family=b.fontFamily||'Microsoft JhengHei', weight=b.fontWeight||'bold'; ctx.fillStyle=b.color||'#000'; ctx.font=weight+' '+nameSize+'px "'+family+'", Arial'; var nameText='聯絡資訊：'+(c.name||''); fitText(ctx,nameText,b.x+px,y1,b.w-165,nameSize+6); ctx.font=weight+' '+titleSize+'px "'+family+'", Arial'; var tw=ctx.measureText(nameText).width+12; fitText(ctx,c.title||'',b.x+px+tw,y1,b.w-165-tw,titleSize+6); ctx.font=weight+' '+phoneSize+'px "'+family+'", Arial'; fitText(ctx,c.phone||'',b.x+px,y2,b.w-170,phoneSize+4); ctx.font=weight+' '+companySize+'px "'+family+'", Arial'; fitText(ctx,(c.company||'吉富工商')+' '+(c.address||''),b.x+px,y3,b.w-170,companySize+4); var photo=await loadImage(assets.photo); if(photo){ctx.save();roundRect(ctx,b.photoX,b.photoY,b.photoSize,b.photoSize,0);ctx.clip();drawCover(ctx,photo,b.photoX,b.photoY,b.photoSize,b.photoSize);ctx.restore();} var qr=await loadImage(assets.qr); if(qr){ctx.fillStyle='#fff';ctx.fillRect(b.qrX-4,b.qrY-4,b.qrSize+8,b.qrSize+8);drawContain(ctx,qr,b.qrX,b.qrY,b.qrSize,b.qrSize);}}
-  function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
+  async function drawContact(ctx){
+    var c=getSelectedContact()||{};
+    var family=settings.fontFamily||'Microsoft JhengHei';
+    var weight='900';
+    ctx.fillStyle=settings.color||'#000';
+    ctx.textBaseline='alphabetic';
+
+    var nameX=930, phoneX=930, companyX=930;
+    var nameY=126, phoneY=182, companyY=238;
+
+    var nameText=c.name||'';
+    var titleText=c.title||'';
+
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,nameText,nameX,nameY,130,38);
+
+    var titleX=nameX+Math.min(ctx.measureText(nameText).width,130)+26;
+    ctx.font=weight+' 30px "'+family+'", Arial';
+    fitText(ctx,titleText,titleX,nameY,120,34);
+
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',phoneX,phoneY,250,38);
+
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,c.company||'吉富工商',companyX,companyY,250,38);
+
+    var photo=await loadImage(c.photo_url||c.avatar_url||'');
+    var qr=await loadImage(c.qr_url||c.qr_code_url||'');
+
+    var qrBaseX=1218, qrBaseY=122, qrBaseSize=64;
+    var qOffsetX=numOr(c.qr_offset_x,0);
+    var qOffsetY=numOr(c.qr_offset_y,0);
+    var qScale=Math.max(0.5,Math.min(2.0,numOr(c.qr_scale,1)));
+    var qrSize=qrBaseSize*qScale;
+    var qrX=qrBaseX+qOffsetX;
+    var qrY=qrBaseY+qOffsetY;
+
+    var photoX=1356, photoY=58, photoW=74, photoH=210;
+    var pOffsetX=numOr(c.photo_offset_x,0);
+    var pOffsetY=numOr(c.photo_offset_y,0);
+    var pScale=Math.max(0.6,Math.min(2.2,numOr(c.photo_scale,1)));
+
+    if(qr){
+      drawQrImage(ctx,qr,qrX,qrY,qrSize);
+    }
+
+    if(photo){
+      drawPortraitFreeScale(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
+    }
+  }
+
+function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
+    if(!img)return;
+    var iw=img.naturalWidth||img.width;
+    var ih=img.naturalHeight||img.height;
+    if(!iw||!ih)return;
+
+    var baseScale=Math.min(w/iw,h/ih);
+    var scale=baseScale*(scaleAdjust||1);
+    var dw=iw*scale;
+    var dh=ih*scale;
+    var dx=x+(w-dw)/2+Number(offsetX||0);
+    var dy=y+(h-dh)/2+Number(offsetY||0);
+
+    ctx.drawImage(img,dx,dy,dw,dh);
+  }
+
+function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
-  function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  async function downloadCanvas(){await renderCanvas(); var dm=dms.find(function(x){return x.id===selectedDm;}); var c=contacts.find(function(x){return x.id===selectedContact;}); var a=document.createElement('a'); a.href=document.getElementById('dmCanvas').toDataURL('image/png'); a.download=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-'); a.click(); await addLog('下載DM',a.download);}
+      function drawQrImage(ctx,img,x,y,size){
+    if(!img)return;
+    var iw=img.naturalWidth||img.width;
+    var ih=img.naturalHeight||img.height;
+    if(!iw||!ih)return;
+
+    ctx.save();
+    ctx.fillStyle='#fff';
+    ctx.fillRect(x,y,size,size);
+
+    var scale=Math.min(size/iw,size/ih);
+    var dw=iw*scale;
+    var dh=ih*scale;
+    var dx=x+(size-dw)/2;
+    var dy=y+(size-dh)/2;
+    ctx.drawImage(img,dx,dy,dw,dh);
+    ctx.restore();
+  }
+
+function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
+    if(!img)return;
+    var iw=img.width, ih=img.height;
+
+    // contain-like base so entire person is less likely to burst out visually,
+    // then user scale controls zoom.
+    var baseScale=Math.max(w/iw,h/ih);
+    var scale=baseScale*(scaleAdjust||1);
+
+    var dw=iw*scale;
+    var dh=ih*scale;
+
+    var dx=x+(w-dw)/2+Number(offsetX||0);
+    var dy=y+(h-dh)/2+Number(offsetY||0);
+
+    ctx.drawImage(img,dx,dy,dw,dh);
+  }
+
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+async function downloadCanvas(){
+    var canvas=document.getElementById('dmCanvas');
+    if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
+
+    await renderCanvas();
+
+    var dm=dms.find(function(x){return x.id===selectedDm;});
+    var c=contacts.find(function(x){return x.id===selectedContact;});
+    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-');
+
+    try{
+      canvas.toBlob(function(blob){
+        if(!blob){
+          openImageForMobileSave(canvas.toDataURL('image/png'));
+          return;
+        }
+
+        var url=URL.createObjectURL(blob);
+        var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
+        var isLine=/Line\//i.test(navigator.userAgent||'');
+
+        if(!isMobile && !isLine){
+          var a=document.createElement('a');
+          a.href=url;
+          a.download=fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function(){URL.revokeObjectURL(url);},1500);
+          addLog('下載DM',fileName);
+          return;
+        }
+
+        showMobileDownloadFallback(url,fileName);
+        var win=window.open(url,'_blank');
+        if(!win){
+          notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
+        }
+        addLog('下載DM',fileName);
+      },'image/png',1);
+    }catch(err){
+      try{
+        openImageForMobileSave(canvas.toDataURL('image/png'));
+      }catch(e){
+        notice('下載失敗，請先更新預覽後再試。');
+      }
+    }
+  }
+
+  function openImageForMobileSave(url){
+    var win=window.open(url,'_blank');
+    if(!win){
+      showMobileDownloadFallback(url,'jifu-dm.png');
+      notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
+    }
+  }
+
+  function showMobileDownloadFallback(url,fileName){
+    var old=document.getElementById('mobileDownloadFallback');
+    if(old)old.remove();
+
+    var box=document.createElement('div');
+    box.id='mobileDownloadFallback';
+    box.className='mobile-download-fallback';
+    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button>';
+
+    document.body.appendChild(box);
+
+    var btn=document.getElementById('openMobileImageBtn');
+    if(btn){
+      btn.onclick=function(){ window.open(url,'_blank'); };
+    }
+
+    var close=document.getElementById('closeMobileImageBtn');
+    if(close){
+      close.onclick=function(){
+        var b=document.getElementById('mobileDownloadFallback');
+        if(b)b.remove();
+      };
+    }
+  }
+
+
   init();
 })();
