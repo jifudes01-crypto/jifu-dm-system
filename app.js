@@ -1,3 +1,5 @@
+/* JIFU_QR_PHOTO_SCROLL_FINAL_20260528 */
+/* JIFU_QR_PHOTO_SAFE_LAYOUT_20260528 */
 /* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
 /* JIFU_PHOTO_POSITION_EDITOR_20260528 */
 /* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
@@ -199,6 +201,15 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
+  function keepScrollPosition(fn){
+    var x = window.scrollX || window.pageXOffset || 0;
+    var y = window.scrollY || window.pageYOffset || 0;
+    var result = fn();
+    setTimeout(function(){ window.scrollTo(x,y); }, 0);
+    setTimeout(function(){ window.scrollTo(x,y); }, 60);
+    return result;
+  }
+
   function updateLocalContactPhotoAdjust(contactId,field,value){
     var c=contacts.find(function(x){return x.id===contactId;});
     if(c)c[field]=Number(value);
@@ -221,13 +232,18 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var payload={};
     payload[field]=Number(value);
     updateLocalContactPhotoAdjust(contactId,field,value);
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
     var res=await sb.from('contacts').update(payload).eq('id',contactId);
     if(res.error) notice('照片微調儲存失敗：'+res.error.message);
-    else notice('照片微調已儲存。');
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 80);
   }
 
   async function resetPhotoAdjust(contactId){
     if(!user)return notice('請先登入後台。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
     var payload={photo_offset_x:0,photo_offset_y:0,photo_scale:1};
     var c=contacts.find(function(x){return x.id===contactId;});
     if(c){c.photo_offset_x=0;c.photo_offset_y=0;c.photo_scale=1;}
@@ -235,7 +251,9 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('照片位置重設失敗：'+res.error.message);
     else {
       notice('照片位置已重設。');
-      loadAll();
+      await loadAll();
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
     }
   }
 
@@ -259,7 +277,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error){notice('通訊錄圖片更新失敗：'+res.error.message);return;}
     await addLog(kind==='qr'?'更新業務QR':'更新業務形象照',contactId);
     notice(kind==='qr'?'QR Code 已更新。':'形象照已更新。');
-    loadAll();
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    await loadAll();
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
   }
 
   async function deleteContactAsset(e,contactId,kind){
@@ -278,7 +300,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error){notice(label+'刪除失敗：'+res.error.message);return;}
     await addLog('刪除業務'+label,contactId);
     notice(label+'已刪除。');
-    loadAll();
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    await loadAll();
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
   }
 
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
@@ -326,10 +352,10 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
     // QR 位置維持不動。
-    var qrX=1126, qrY=102, qrSize=126;
+    var qrX=1168, qrY=166, qrSize=82;
 
     // 形象照基準框：固定在灰色框內。
-    var photoX=1248, photoY=58, photoW=178, photoH=244;
+    var photoX=1350, photoY=58, photoW=78, photoH=210;
 
     // 每位業務可在後台微調照片裁切位置。
     var pOffsetX=numOr(c.photo_offset_x,0);
