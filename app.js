@@ -1,3 +1,4 @@
+/* JIFU_PHOTO_CONTAIN_NO_CROP_FIX_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
 /* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
 /* JIFU_QR_PHOTO_SCROLL_FINAL_20260528 */
@@ -474,11 +475,13 @@ function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return;
 
 function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
     if(!img)return;
-    var iw=img.width, ih=img.height;
+    var iw=img.naturalWidth||img.width;
+    var ih=img.naturalHeight||img.height;
+    if(!iw||!ih)return;
 
-    // contain-like base so entire person is less likely to burst out visually,
-    // then user scale controls zoom.
-    var baseScale=Math.max(w/iw,h/ih);
+    // contain 模式：完整顯示整張形象照，不裁切。
+    // 縮放器只改變圖片大小；左右/上下只移動圖片。
+    var baseScale=Math.min(w/iw,h/ih);
     var scale=baseScale*(scaleAdjust||1);
 
     var dw=iw*scale;
