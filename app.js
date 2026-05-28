@@ -1,4 +1,4 @@
-/* JIFU_CLEAN_WORKING_REPAIR_20260528 */
+/* JIFU_FORCE_BOOT_REPAIR_20260528 */
 (function(){
   'use strict';
   var app=document.getElementById('app');
@@ -21,14 +21,43 @@
   window.addEventListener('error',function(e){console.error(e.error||e.message);});
   window.addEventListener('unhandledrejection',function(e){console.error(e.reason); notice('發生錯誤：'+((e.reason&&e.reason.message)||e.reason||'未知錯誤'));});
 
-  function init(){
-    if(!cfg.url || !cfg.anonKey || !window.supabase){
-      app.innerHTML='<div class="fatal-panel"><h2>Supabase 尚未設定完成</h2><p>請檢查 config.js 是否有 url 與 anonKey，且金鑰必須在同一行。</p></div>';
-      return;
+  async function init(){
+    try{
+      if(!app){
+        app=document.getElementById('app');
+      }
+
+      // 先保底建立畫面，不讓使用者永遠卡在載入中。
+      if(app){
+        app.innerHTML='<div class="notice">正在連線雲端資料庫...</div>';
+      }
+
+      await initSupabase();
+      await loadAll();
+
+      if(!selectedDm && dms[0]) selectedDm=dms[0].id;
+      if(!selectedContact && contacts[0]) selectedContact=contacts[0].id;
+
+      render();
+      setTimeout(renderCanvas,80);
+    }catch(err){
+      console.error(err);
+
+      // 即使資料庫或某段功能錯誤，也強制打開主畫面。
+      try{
+        if(!selectedDm && dms && dms[0]) selectedDm=dms[0].id;
+        if(!selectedContact && contacts && contacts[0]) selectedContact=contacts[0].id;
+        render();
+        setTimeout(renderCanvas,120);
+      }catch(e){
+        console.error(e);
+        if(app){
+          app.innerHTML='<div class="card"><h2>系統載入錯誤</h2><p class="muted">請截圖這段錯誤給我：</p><pre style="white-space:pre-wrap;color:#8a1d1d;background:#fff1f1;padding:12px;border-radius:12px;">'+escapeHtml(String(err && (err.message || err) || err))+'</pre></div>';
+        }
+      }
+
+      notice('發生錯誤：'+String(err && (err.message || err) || err));
     }
-    sb=window.supabase.createClient(cfg.url,cfg.anonKey);
-    sb.auth.getSession().then(function(res){user=res.data.session&&res.data.session.user||null; return loadAll();});
-    sb.auth.onAuthStateChange(function(evt,session){user=session&&session.user||null; loadAll();});
   }
 
   async function loadAll(){
@@ -126,89 +155,6 @@
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  async function downloadCanvas(){
-    var canvas=document.getElementById('dmCanvas');
-    if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
-
-    await renderCanvas();
-
-    var dm=dms.find(function(x){return x.id===selectedDm;});
-    var c=contacts.find(function(x){return x.id===selectedContact;});
-    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-');
-
-    try{
-      canvas.toBlob(function(blob){
-        if(!blob){
-          openImageForMobileSave(canvas.toDataURL('image/png'));
-          return;
-        }
-
-        var url=URL.createObjectURL(blob);
-        var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
-        var isLine=/Line\//i.test(navigator.userAgent||'');
-
-        if(!isMobile && !isLine){
-          var a=document.createElement('a');
-          a.href=url;
-          a.download=fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(function(){URL.revokeObjectURL(url);},1500);
-          addLog('下載DM',fileName);
-          return;
-        }
-
-        showMobileDownloadFallback(url,fileName);
-        var win=window.open(url,'_blank');
-        if(!win){
-          notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
-        }
-        addLog('下載DM',fileName);
-      },'image/png',1);
-    }catch(err){
-      try{
-        openImageForMobileSave(canvas.toDataURL('image/png'));
-      }catch(e){
-        notice('下載失敗，請先更新預覽後再試。');
-      }
-    }
-  }
-
-  function openImageForMobileSave(url){
-    var win=window.open(url,'_blank');
-    if(!win){
-      showMobileDownloadFallback(url,'jifu-dm.png');
-      notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
-    }
-  }
-
-  function showMobileDownloadFallback(url,fileName){
-    var old=document.getElementById('mobileDownloadFallback');
-    if(old)old.remove();
-
-    var box=document.createElement('div');
-    box.id='mobileDownloadFallback';
-    box.className='mobile-download-fallback';
-    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button>';
-
-    document.body.appendChild(box);
-
-    var btn=document.getElementById('openMobileImageBtn');
-    if(btn){
-      btn.onclick=function(){
-        window.open(url,'_blank');
-      };
-    }
-
-    var close=document.getElementById('closeMobileImageBtn');
-    if(close){
-      close.onclick=function(){
-        var b=document.getElementById('mobileDownloadFallback');
-        if(b)b.remove();
-      };
-    }
-  }
-
+  async function downloadCanvas(){await renderCanvas(); var dm=dms.find(function(x){return x.id===selectedDm;}); var c=contacts.find(function(x){return x.id===selectedContact;}); var a=document.createElement('a'); a.href=document.getElementById('dmCanvas').toDataURL('image/png'); a.download=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-'); a.click(); await addLog('下載DM',a.download);}
   init();
 })();
