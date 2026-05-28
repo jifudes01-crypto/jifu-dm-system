@@ -1,3 +1,5 @@
+/* JIFU_CONTACT_ORDER_LOCK_20260528 */
+/* JIFU_MOBILE_DOWNLOAD_FIX_20260528 */
 /* JIFU_PHOTO_FREE_SCALE_NO_JUMP_20260528 */
 /* JIFU_PHOTO_CONTAIN_NO_CROP_FIX_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
@@ -91,4 +93,51 @@
 }
 .adjust-control{
   align-items:center;
+}
+
+
+/* JIFU_MOBILE_DOWNLOAD_FIX_20260528 */
+.mobile-download-fallback{
+  position:fixed;
+  left:16px;
+  right:16px;
+  bottom:16px;
+  z-index:99999;
+  background:#fff;
+  border:1px solid #d8d0c5;
+  border-radius:16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+  padding:14px;
+  color:#123a55;
+  font-weight:800;
+}
+.mobile-download-fallback p{
+  margin:0 0 10px;
+  font-size:14px;
+  line-height:1.5;
+}
+.mobile-download-fallback small{
+  color:#6b665e;
+  font-weight:700;
+}
+.mobile-download-fallback button{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:12px 14px;
+  background:#0b4d78;
+  color:#fff;
+  font-weight:900;
+  font-size:16px;
+  margin-top:8px;
+}
+.mobile-download-fallback button + button{
+  background:#e9eef2;
+  color:#123a55;
+}
+
+
+/* JIFU_CONTACT_ORDER_LOCK_20260528 */
+.contact-card{
+  scroll-margin-top:120px;
 }

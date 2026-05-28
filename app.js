@@ -1,3 +1,5 @@
+/* JIFU_CONTACT_ORDER_LOCK_20260528 */
+/* JIFU_MOBILE_DOWNLOAD_FIX_20260528 */
 /* JIFU_PHOTO_FREE_SCALE_NO_JUMP_20260528 */
 /* JIFU_PHOTO_CONTAIN_NO_CROP_FIX_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
@@ -46,16 +48,22 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     sb.auth.onAuthStateChange(function(evt,session){user=session&&session.user||null; loadAll();});
   }
 
-  async function loadAll(){
+  
+  function ensureSelectedContactStable(){
+    if(selectedContact && contacts.some(function(c){return c.id===selectedContact;})) return;
+    selectedContact = contacts[0] ? contacts[0].id : '';
+  }
+
+async function loadAll(){
     renderShell();
     try{
       var dmRes=await sb.from('dm_items').select('*').eq('is_active',true).order('created_at',{ascending:false});
       if(dmRes.error) throw dmRes.error;
       dms=dmRes.data||[];
       if(!selectedDm && dms[0]) selectedDm=dms[0].id;
-      var cRes=await sb.from('contacts').select('*').eq('is_active',true).order('created_at',{ascending:false});
+      var cRes=await sb.from('contacts').select('*').order('name',{ascending:true}).order('id',{ascending:true}).eq('is_active',true).order('created_at',{ascending:false});
       if(cRes.error) throw cRes.error;
-      contacts=cRes.data||[];
+      contacts=sortContactsStable(cRes.data||[]); ensureSelectedContactStable();
       if(!selectedContact && contacts[0]) selectedContact=contacts[0].id;
       var sRes=await sb.from('app_settings').select('*').eq('key','contact_box').maybeSingle();
       if(!sRes.error && sRes.data && sRes.data.value) settings=Object.assign(defaultSettings(),sRes.data.value);
@@ -196,7 +204,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
       var ox=numOr(c.photo_offset_x,0);
       var oy=numOr(c.photo_offset_y,0);
       var sc=numOr(c.photo_scale,1);
-      return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'">' +
+      return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'" data-contact-card-id="'+c.id+'">' +
         '<div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3>' +
         '<p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>' +
         '<div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div>' +
@@ -225,7 +233,76 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
   async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
-  function saveScrollNow(){
+  
+  function contactStableKey(c){
+    return String(c.created_at || c.inserted_at || c.updated_at || c.name || c.id || '');
+  }
+
+  function sortContactsStable(list){
+    return (list || []).slice().sort(function(a,b){
+      var ax = Number(a.sort_order);
+      var bx = Number(b.sort_order);
+      var aHas = Number.isFinite(ax);
+      var bHas = Number.isFinite(bx);
+
+      if(aHas && bHas && ax !== bx) return ax - bx;
+      if(aHas && !bHas) return -1;
+      if(!aHas && bHas) return 1;
+
+      var an = String(a.name || '');
+      var bn = String(b.name || '');
+      var byName = an.localeCompare(bn, 'zh-Hant');
+      if(byName) return byName;
+
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
+  }
+
+  function rememberContactPosition(contactId){
+    var card = document.querySelector('[data-contact-card-id="'+contactId+'"]');
+    if(!card) return {x:window.scrollX||0,y:window.scrollY||0,id:contactId};
+    var rect = card.getBoundingClientRect();
+    return {
+      x: window.scrollX || window.pageXOffset || 0,
+      y: window.scrollY || window.pageYOffset || 0,
+      id: contactId,
+      top: rect.top
+    };
+  }
+
+  function restoreContactPosition(pos){
+    if(!pos) return;
+    setTimeout(function(){
+      if(pos.id){
+        var card = document.querySelector('[data-contact-card-id="'+pos.id+'"]');
+        if(card && typeof pos.top === 'number'){
+          var rect = card.getBoundingClientRect();
+          window.scrollTo(pos.x || 0, (window.scrollY || 0) + rect.top - pos.top);
+          return;
+        }
+      }
+      window.scrollTo(pos.x || 0, pos.y || 0);
+    }, 0);
+    setTimeout(function(){
+      if(pos.id){
+        var card = document.querySelector('[data-contact-card-id="'+pos.id+'"]');
+        if(card && typeof pos.top === 'number'){
+          var rect = card.getBoundingClientRect();
+          window.scrollTo(pos.x || 0, (window.scrollY || 0) + rect.top - pos.top);
+          return;
+        }
+      }
+      window.scrollTo(pos.x || 0, pos.y || 0);
+    }, 120);
+  }
+
+  async function loadAllKeepContact(contactId){
+    var pos = rememberContactPosition(contactId || selectedContact);
+    await loadAll();
+    restoreContactPosition(pos);
+  }
+
+function saveScrollNow(){
     return {
       x: window.scrollX || window.pageXOffset || 0,
       y: window.scrollY || window.pageYOffset || 0
@@ -295,7 +372,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('照片位置重設失敗：'+res.error.message);
     else {
       notice('照片位置已重設。');
-      await loadAllKeepScroll();
+      await loadAllKeepContact(contactId);
     }
   }
 
@@ -340,7 +417,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('QR 位置重設失敗：'+res.error.message);
     else {
       notice('QR 位置已重設。');
-      await loadAllKeepScroll();
+      await loadAllKeepContact(contactId);
     }
   }
 
@@ -366,7 +443,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     notice(kind==='qr'?'QR Code 已更新。':'形象照已更新。');
     var scrollX = window.scrollX || window.pageXOffset || 0;
     var scrollY = window.scrollY || window.pageYOffset || 0;
-    await loadAllKeepScroll();
+    await loadAllKeepContact(contactId);
   }
 
   async function deleteContactAsset(e,contactId,kind){
@@ -387,7 +464,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     notice(label+'已刪除。');
     var scrollX = window.scrollX || window.pageXOffset || 0;
     var scrollY = window.scrollY || window.pageYOffset || 0;
-    await loadAllKeepScroll();
+    await loadAllKeepContact(contactId);
   }
 
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
@@ -525,7 +602,91 @@ function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
   }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  async function downloadCanvas(){await renderCanvas(); var dm=dms.find(function(x){return x.id===selectedDm;}); var c=contacts.find(function(x){return x.id===selectedContact;}); var a=document.createElement('a'); a.href=document.getElementById('dmCanvas').toDataURL('image/png'); a.download=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-'); a.click(); await addLog('下載DM',a.download);}
+  async async function downloadCanvas(){
+    var canvas=document.getElementById('dmCanvas');
+    if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
+
+    await renderCanvas();
+
+    var dm=dms.find(function(x){return x.id===selectedDm;});
+    var c=contacts.find(function(x){return x.id===selectedContact;});
+    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-');
+
+    try{
+      canvas.toBlob(function(blob){
+        if(!blob){
+          openImageForMobileSave(canvas.toDataURL('image/png'));
+          return;
+        }
+
+        var url=URL.createObjectURL(blob);
+        var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
+        var isLine=/Line\//i.test(navigator.userAgent||'');
+
+        if(!isMobile && !isLine){
+          var a=document.createElement('a');
+          a.href=url;
+          a.download=fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function(){URL.revokeObjectURL(url);},1500);
+          addLog('下載DM',fileName);
+          return;
+        }
+
+        // 手機瀏覽器：a.download 常失效，改成提供可開啟圖片。
+        showMobileDownloadFallback(url,fileName);
+        var win=window.open(url,'_blank');
+        if(!win){
+          notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
+        }
+        addLog('下載DM',fileName);
+      },'image/png',1);
+    }catch(err){
+      try{
+        openImageForMobileSave(canvas.toDataURL('image/png'));
+      }catch(e){
+        notice('下載失敗，請先更新預覽後再試。');
+      }
+    }
+  }
+
+  function openImageForMobileSave(url){
+    var win=window.open(url,'_blank');
+    if(!win){
+      showMobileDownloadFallback(url,'jifu-dm.png');
+      notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
+    }
+  }
+
+  function showMobileDownloadFallback(url,fileName){
+    var old=document.getElementById('mobileDownloadFallback');
+    if(old)old.remove();
+
+    var box=document.createElement('div');
+    box.id='mobileDownloadFallback';
+    box.className='mobile-download-fallback';
+    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button>';
+
+    document.body.appendChild(box);
+
+    var btn=document.getElementById('openMobileImageBtn');
+    if(btn){
+      btn.onclick=function(){
+        window.open(url,'_blank');
+      };
+    }
+
+    var close=document.getElementById('closeMobileImageBtn');
+    if(close){
+      close.onclick=function(){
+        var b=document.getElementById('mobileDownloadFallback');
+        if(b)b.remove();
+      };
+    }
+  }
+
   init();
 })();  function drawPortraitCrop(ctx,img,x,y,w,h){
     if(!img)return;
