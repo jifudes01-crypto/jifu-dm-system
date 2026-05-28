@@ -1,3 +1,5 @@
+/* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
+/* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
 /* JIFU_QR_PHOTO_SCROLL_FINAL_20260528 */
 /* JIFU_QR_PHOTO_SAFE_LAYOUT_20260528 */
 /* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
@@ -56,4 +58,25 @@
   border-radius:8px !important;
   font-size:12px !important;
   text-align:right;
+}
+
+
+/* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
+.qr-adjuster{
+  margin-top:8px;
+  padding:10px;
+  border:1px solid #d8d0c5;
+  border-radius:12px;
+  background:#fbfaf7;
+}
+.qr-adjuster label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  color:#123a55;
+  margin:8px 0;
+}
+.qr-adjuster input[type="range"]{
+  width:100%;
+  padding:0;
 }

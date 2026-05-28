@@ -1,3 +1,5 @@
+/* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
+/* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
 /* JIFU_QR_PHOTO_SCROLL_FINAL_20260528 */
 /* JIFU_QR_PHOTO_SAFE_LAYOUT_20260528 */
 /* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
@@ -156,6 +158,20 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
       btn.onclick=function(){ resetPhotoAdjust(btn.dataset.resetPhotoAdjust); };
     });
 
+    document.querySelectorAll('[data-qr-adjust]').forEach(function(input){
+      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-qr-adjust-number]').forEach(function(input){
+      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
+    });
+
+    document.querySelectorAll('[data-reset-qr-adjust]').forEach(function(btn){
+      btn.onclick=function(){ resetQrAdjust(btn.dataset.resetQrAdjust); };
+    });
+
     var ff=document.getElementById('fontFamily'); if(ff)ff.value=settings.fontFamily;
     var fw=document.getElementById('fontWeight'); if(fw)fw.value=settings.fontWeight;
     var bg=document.getElementById('bgEnabled'); if(bg)bg.value=String(!!settings.bgEnabled);
@@ -192,7 +208,13 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
               '<button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'') +
           '</div>' +
           '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
-            (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'')+'</div>' +
+            (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'') +
+            (user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div>' +
+              '<label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label>' +
+              '<label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label>' +
+              '<label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label>' +
+              '<button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'') +
+          '</div>' +
         '</div></div>';
     }).join('');
   }
@@ -251,6 +273,53 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(res.error) notice('照片位置重設失敗：'+res.error.message);
     else {
       notice('照片位置已重設。');
+      await loadAll();
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+      setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+    }
+  }
+
+  function updateLocalContactQrAdjust(contactId,field,value){
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c)c[field]=Number(value);
+    if(selectedContact===contactId && view==='front') setTimeout(renderCanvas,30);
+  }
+
+  function previewQrAdjust(contactId,field,value){
+    updateLocalContactQrAdjust(contactId,field,value);
+
+    document.querySelectorAll('[data-qr-adjust="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+    document.querySelectorAll('[data-qr-adjust-number="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+  }
+
+  async function saveQrAdjust(contactId,field,value){
+    if(!user)return notice('請先登入後台。');
+    var payload={};
+    payload[field]=Number(value);
+    updateLocalContactQrAdjust(contactId,field,value);
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('QR 微調儲存失敗：'+res.error.message);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
+    setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 80);
+  }
+
+  async function resetQrAdjust(contactId){
+    if(!user)return notice('請先登入後台。');
+    var scrollX = window.scrollX || window.pageXOffset || 0;
+    var scrollY = window.scrollY || window.pageYOffset || 0;
+    var payload={qr_offset_x:0,qr_offset_y:0,qr_scale:1};
+    var c=contacts.find(function(x){return x.id===contactId;});
+    if(c){c.qr_offset_x=0;c.qr_offset_y=0;c.qr_scale=1;}
+    var res=await sb.from('contacts').update(payload).eq('id',contactId);
+    if(res.error) notice('QR 位置重設失敗：'+res.error.message);
+    else {
+      notice('QR 位置已重設。');
       await loadAll();
       setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
       setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
@@ -351,11 +420,17 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var photo=await loadImage(c.photo_url||c.avatar_url||'');
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    // QR 位置維持不動。
-    var qrX=1168, qrY=166, qrSize=82;
+    // QR 基準位置：可在後台獨立微調，不影響文字與形象照。
+    var qrBaseX=1218, qrBaseY=122, qrBaseSize=64;
+    var qOffsetX=numOr(c.qr_offset_x,0);
+    var qOffsetY=numOr(c.qr_offset_y,0);
+    var qScale=Math.max(0.5,Math.min(2.0,numOr(c.qr_scale,1)));
+    var qrSize=qrBaseSize*qScale;
+    var qrX=qrBaseX+qOffsetX;
+    var qrY=qrBaseY+qOffsetY;
 
     // 形象照基準框：固定在灰色框內。
-    var photoX=1350, photoY=58, photoW=78, photoH=210;
+    var photoX=1356, photoY=58, photoW=74, photoH=210;
 
     // 每位業務可在後台微調照片裁切位置。
     var pOffsetX=numOr(c.photo_offset_x,0);
