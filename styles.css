@@ -1,3 +1,4 @@
+/* JIFU_PHOTO_POSITION_EDITOR_20260528 */
 /* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
 /* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
 /* JIFU_IDEAL_LAYOUT_FINAL_20260527 */
@@ -15,3 +16,24 @@
 .asset-preview img{width:100%;height:100%;object-fit:cover}.qr-preview img{object-fit:contain!important;background:#fff}
 .asset-delete{display:block;width:100%;border:1px solid #f0caca;background:#fff1f1;color:#8a1d1d;border-radius:10px;padding:9px 8px;font-weight:900;font-size:13px;cursor:pointer}
 .asset-delete.disabled,.asset-delete:disabled{background:#f6f1ec;border-color:#e3d8cd;color:#a9a19a;cursor:not-allowed}
+
+
+/* JIFU_PHOTO_POSITION_EDITOR_20260528 */
+.photo-adjuster{
+  margin-top:8px;
+  padding:10px;
+  border:1px solid #d8d0c5;
+  border-radius:12px;
+  background:#fbfaf7;
+}
+.photo-adjuster label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  color:#123a55;
+  margin:8px 0;
+}
+.photo-adjuster input[type="range"]{
+  width:100%;
+  padding:0;
+}
