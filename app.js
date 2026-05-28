@@ -1,3 +1,4 @@
+/* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
 /* JIFU_PHOTO_POSITION_EDITOR_20260528 */
 /* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
 /* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
@@ -144,6 +145,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
       input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value); };
     });
 
+    document.querySelectorAll('[data-photo-adjust-number]').forEach(function(input){
+      input.oninput=function(){ previewPhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
+      input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
+    });
+
     document.querySelectorAll('[data-reset-photo-adjust]').forEach(function(btn){
       btn.onclick=function(){ resetPhotoAdjust(btn.dataset.resetPhotoAdjust); };
     });
@@ -178,9 +184,9 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
           '<div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>' +
             (user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'') +
             (user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div>' +
-              '<label>左右 <input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></label>' +
-              '<label>上下 <input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></label>' +
-              '<label>縮放 <input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></label>' +
+              '<label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label>' +
+              '<label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label>' +
+              '<label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label>' +
               '<button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'') +
           '</div>' +
           '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
@@ -201,6 +207,13 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
 
   function previewPhotoAdjust(contactId,field,value){
     updateLocalContactPhotoAdjust(contactId,field,value);
+
+    document.querySelectorAll('[data-photo-adjust="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
+    document.querySelectorAll('[data-photo-adjust-number="'+contactId+'"][data-adjust-field="'+field+'"]').forEach(function(el){
+      if(String(el.value)!==String(value)) el.value=value;
+    });
   }
 
   async function savePhotoAdjust(contactId,field,value){
@@ -324,9 +337,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var pScale=Math.max(0.6,Math.min(2.2,numOr(c.photo_scale,1)));
 
     if(qr){
-      ctx.fillStyle='#fff';
-      ctx.fillRect(qrX-4,qrY-4,qrSize+8,qrSize+8);
-      drawSquareContain(ctx,qr,qrX,qrY,qrSize,qrSize);
+      drawQrImage(ctx,qr,qrX,qrY,qrSize);
     }
 
     if(photo){
@@ -341,7 +352,26 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
 function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
-    function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
+      function drawQrImage(ctx,img,x,y,size){
+    if(!img)return;
+    var iw=img.naturalWidth||img.width;
+    var ih=img.naturalHeight||img.height;
+    if(!iw||!ih)return;
+
+    ctx.save();
+    ctx.fillStyle='#fff';
+    ctx.fillRect(x,y,size,size);
+
+    var scale=Math.min(size/iw,size/ih);
+    var dw=iw*scale;
+    var dh=ih*scale;
+    var dx=x+(size-dw)/2;
+    var dy=y+(size-dh)/2;
+    ctx.drawImage(img,dx,dy,dw,dh);
+    ctx.restore();
+  }
+
+function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
     if(!img)return;
     var iw=img.width, ih=img.height;
 

@@ -1,3 +1,4 @@
+/* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
 /* JIFU_PHOTO_POSITION_EDITOR_20260528 */
 /* JIFU_FINAL_IMAGE_QR_ONLY_20260528 */
 /* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
@@ -36,4 +37,21 @@
 .photo-adjuster input[type="range"]{
   width:100%;
   padding:0;
+}
+
+
+/* JIFU_QR_POSITION_EDITOR_NUMBER_FIX_20260528 */
+.adjust-control{
+  display:grid;
+  grid-template-columns:1fr 72px;
+  align-items:center;
+  gap:8px;
+}
+.adjust-number{
+  width:72px !important;
+  min-width:72px;
+  padding:6px 8px !important;
+  border-radius:8px !important;
+  font-size:12px !important;
+  text-align:right;
 }
