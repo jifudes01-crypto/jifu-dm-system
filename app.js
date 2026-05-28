@@ -1,3 +1,4 @@
+/* JIFU_FINAL_COORDINATE_CORRECTED_20260528 */
 /* JIFU_IDEAL_LAYOUT_FINAL_20260527 */
 (function(){
   'use strict';
@@ -225,37 +226,44 @@
     ctx.fillStyle=settings.color||'#000';
     ctx.textBaseline='alphabetic';
 
-    // 依照使用者提供的理想圖：
-    // 左側大字資訊、中間 QR、右側大形象照。
-    // 不重畫模板標題、背景、線條。
+    // 最終定位修正：
+    // 1. 文字固定在左側資訊區內，不跑出灰框。
+    // 2. 全部靠左對齊。
+    // 3. 姓名與職稱用動態距離，避免間距過遠。
+    // 4. 形象照固定在右側框內，不超出版面。
+    // 5. QR 固定在文字與人像中間，不互蓋。
 
-    var nameX=1026;
-    var titleX=1208;
-    var phoneX=1026;
-    var companyX=1026;
+    var nameX=930;
+    var phoneX=930;
+    var companyX=930;
 
-    var nameY=142;
-    var phoneY=205;
-    var companyY=268;
+    var nameY=126;
+    var phoneY=182;
+    var companyY=238;
 
-    ctx.font=weight+' 42px "'+family+'", Arial';
-    fitText(ctx,c.name||'',nameX,nameY,170,46);
+    var nameText=c.name||'';
+    var titleText=c.title||'';
 
-    ctx.font=weight+' 38px "'+family+'", Arial';
-    fitText(ctx,c.title||'',titleX,nameY,120,42);
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,nameText,nameX,nameY,130,38);
 
-    ctx.font=weight+' 43px "'+family+'", Arial';
-    fitText(ctx,c.phone||'',phoneX,phoneY,300,48);
+    // 職稱跟著姓名後方，不再固定拉太遠。
+    var titleX=nameX+Math.min(ctx.measureText(nameText).width,130)+26;
+    ctx.font=weight+' 30px "'+family+'", Arial';
+    fitText(ctx,titleText,titleX,nameY,120,34);
 
-    ctx.font=weight+' 42px "'+family+'", Arial';
-    fitText(ctx,c.company||'吉富工商',companyX,companyY,310,46);
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,c.phone||'',phoneX,phoneY,250,38);
+
+    ctx.font=weight+' 34px "'+family+'", Arial';
+    fitText(ctx,c.company||'吉富工商',companyX,companyY,250,38);
 
     var photo=await loadImage(c.photo_url||c.avatar_url||'');
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    // 理想圖位置：QR 在文字右側中間；形象照在最右且較大。
-    var qrX=1240, qrY=104, qrSize=136;
-    var photoX=1364, photoY=74, photoW=176, photoH=254;
+    // 右側圖像區：全部限制在 1456px 畫布內。
+    var qrX=1156, qrY=106, qrSize=116;
+    var photoX=1284, photoY=62, photoW=144, photoH=210;
 
     if(qr){
       ctx.fillStyle='#fff';
