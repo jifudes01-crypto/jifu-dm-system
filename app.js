@@ -1,3 +1,4 @@
+/* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
 /* JIFU_RESTORE_FEATURES_CLEAN_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
 /* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
@@ -15,7 +16,7 @@
   var cfg=(window.JIFU_SUPABASE||{});
   var sb=null,user=null,view='front';
   var dms=[],contacts=[],logs=[];
-  var selectedDm='', selectedContact='';
+  var selectedDm='', selectedContact='', selectedTeam='';
   var assets={photo:'',qr:''};
   var settings=defaultSettings();
   var pendingFiles=[];
@@ -82,29 +83,25 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   }
 
   function frontHtml(){
-    var c = getSelectedContact ? getSelectedContact() : null;
-    var photoUrl = c ? (c.photo_url || c.avatar_url || '') : '';
-    var qrUrl = c ? (c.qr_url || c.qr_code_url || '') : '';
-
-    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>' +
-      '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select></div>' +
-      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small></div>' +
-      '<div class="mini-contact">' +
-        '<div><strong>' + escapeHtml(c ? (c.name || '未命名') : '尚未選擇') + '</strong><span>' + escapeHtml(c ? (c.title || '') : '') + '</span><p>' + escapeHtml(c ? (c.phone || '') : '') + '<br>' + escapeHtml(c ? (c.company || '') : '') + '</p></div>' +
-        '<div class="mini-assets">' +
-          (photoUrl ? '<img src="' + escapeAttr(photoUrl) + '" alt="形象照">' : '<span>無形象照</span>') +
-          (qrUrl ? '<img src="' + escapeAttr(qrUrl) + '" alt="QR Code">' : '<span>無 QR</span>') +
-        '</div>' +
-      '</div>' +
-      '<button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button>' +
-      '</section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM 與自己的姓名，即可自動帶入聯絡資訊、形象照與 QR Code，並下載完整 DM。上傳與刪除請到後台通訊錄管理。</p></section></aside>' +
-      '<section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
+    ensureSelectedContactInTeam();
+    var c=getSelectedContact?getSelectedContact():null;
+    var photoUrl=c?(c.photo_url||c.avatar_url||''):'';
+    var qrUrl=c?(c.qr_url||c.qr_code_url||''):'';
+    var lineHint=isLineBrowser()?'<div class="line-hint">LINE 內建瀏覽器請使用下方「手機備用選單」。</div>':'';
+    return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>'+lineHint+
+      '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
+      '<div class="field"><label>選擇團隊</label><select id="teamSelect">'+teamOptions()+'</select><button id="teamPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇團隊</button></div>'+
+      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
+      '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p></div><div class="mini-assets">'+
+      (photoUrl?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>無形象照</span>')+
+      (qrUrl?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>無 QR</span>')+
+      '</div></div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、團隊與自己的姓名，即可自動帶入聯絡資訊、形象照與 QR Code，並下載完整 DM。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
   }
   function adminHtml(){
-    return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">請使用英文檔名，例如 A26-5_DM01.jpg。不要用中文、空格、單引號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
+    return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><div class="field"><label>DM 名稱</label><input id="dmUploadName" placeholder="例如：26年5月農地版第一期"></div><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">可先輸入 DM 名稱再上傳。若一次多張，系統會自動在後面加序號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
   }
   function contactsHtml(){
-    return '<section class="card"><h2>通訊錄管理</h2><p class="muted">前台會讀取這裡的業務資料。CSV 匯入欄位請用：name,title,phone,company,address</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div><div class="contact-grid" style="margin-top:18px">'+contactCards()+'</div></section>';
+    return '<section class="card"><h2>通訊錄管理</h2><p class="muted">前後台都會依「公司 / 團隊」自動分組。CSV 匯入欄位請用：name,title,phone,company,address</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司 / 團隊</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div><div class="contact-grid" style="margin-top:18px">'+contactCards()+'</div></section>';
   }
   function settingsHtml(){
     return '<section class="card"><h2>右上角聯絡資訊欄位設定</h2><p class="muted">所有設定都會存到雲端。這些欄位只控制右上角白色聯絡資訊框，不會影響物件格。</p><div class="row4"><div class="field"><label>姓名字級</label><input id="nameSize" type="number" value="'+settings.nameSize+'"></div><div class="field"><label>職稱字級</label><input id="titleSize" type="number" value="'+settings.titleSize+'"></div><div class="field"><label>電話字級</label><input id="phoneSize" type="number" value="'+settings.phoneSize+'"></div><div class="field"><label>公司/地址字級</label><input id="companySize" type="number" value="'+settings.companySize+'"></div></div><div class="row4"><div class="field"><label>姓名區行距</label><input id="nameGap" type="number" value="'+settings.nameGap+'"></div><div class="field"><label>下方資訊行距</label><input id="subGap" type="number" value="'+settings.subGap+'"></div><div class="field"><label>左右內距</label><input id="paddingX" type="number" value="'+settings.paddingX+'"></div><div class="field"><label>上下內距</label><input id="paddingY" type="number" value="'+settings.paddingY+'"></div></div><div class="row"><div class="field"><label>字型</label><select id="fontFamily"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>MingLiU</option><option>DFKai-SB</option><option>Arial</option><option>Tahoma</option></select></div><div class="field"><label>文字粗細</label><select id="fontWeight"><option value="normal">一般</option><option value="600">SemiBold</option><option value="bold">粗體</option><option value="900">超粗</option></select></div></div><div class="row"><div class="field"><label>文字顏色</label><input id="fontColor" type="color" value="'+settings.color+'"></div><div class="field"><label>聯絡區背景</label><select id="bgEnabled"><option value="false">不要底色，使用公版白色框</option><option value="true">加半透明底色</option></select></div></div><button id="saveSettingsBtn" class="btn primary '+(!user?'hidden':'')+'">儲存設定到雲端</button><p class="admin-only-note '+(user?'hidden':'')+'">請先登入後台，才能儲存欄位設定。</p></section>';
@@ -112,118 +109,95 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   function logsHtml(){return '<section class="card"><h2>紀錄</h2><div class="log-list">'+(user?(logs.length?logs.map(function(l){return '<div>'+new Date(l.created_at).toLocaleString()+'｜'+escapeHtml(l.action)+'｜'+escapeHtml(l.detail||'')+'</div>';}).join(''):'尚無紀錄'):'請先登入後台查看紀錄。')+'</div></section>';}
 
   function bindPage(){
-    var el;
-    if((el=document.getElementById('dmSelect'))) el.onchange=function(){selectedDm=this.value; render(); renderCanvas();};
-    if((el=document.getElementById('contactSelect'))) el.onchange=function(){selectedContact=this.value; render(); renderCanvas();};
-    if((el=document.getElementById('renderBtn'))) el.onclick=renderCanvas;
-    if((el=document.getElementById('downloadBtn'))) el.onclick=downloadCanvas;
-
-    if((el=document.getElementById('loginBtn'))) el.onclick=login;
-    if((el=document.getElementById('logoutBtn'))) el.onclick=logout;
-    if((el=document.getElementById('dmUpload'))) el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]); var p=document.getElementById('pendingInfo'); if(p)p.textContent='已選擇 '+pendingFiles.length+' 張 DM';};
-    if((el=document.getElementById('uploadBtn'))) el.onclick=uploadDms;
-    if((el=document.getElementById('addContactBtn'))) el.onclick=addContact;
-    if((el=document.getElementById('saveSettingsBtn'))) el.onclick=saveSettings;
-
+    var el; document.body.classList.toggle('line-browser',isLineBrowser()); document.body.classList.toggle('mobile-browser',isMobileBrowser());
+    if((el=document.getElementById('dmSelect'))){el.onchange=function(){selectedDm=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
+    if((el=document.getElementById('teamSelect'))){el.onchange=function(){selectedTeam=this.value;ensureSelectedContactInTeam();render();setTimeout(renderCanvas,50);};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
+    if((el=document.getElementById('contactSelect'))){el.onchange=function(){selectedContact=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
+    if((el=document.getElementById('dmPickerBtn')))el.onclick=function(){openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('teamPickerBtn')))el.onclick=function(){openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('contactPickerBtn')))el.onclick=function(){openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('renderBtn')))el.onclick=renderCanvas;
+    if((el=document.getElementById('downloadBtn')))el.onclick=downloadCanvas;
+    if((el=document.getElementById('loginBtn')))el.onclick=login;
+    if((el=document.getElementById('logoutBtn')))el.onclick=logout;
+    if((el=document.getElementById('dmUpload')))el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]);var p=document.getElementById('pendingInfo');if(p)p.textContent='已選擇 '+pendingFiles.length+' 張 DM';};
+    if((el=document.getElementById('uploadBtn')))el.onclick=uploadDms;
+    if((el=document.getElementById('addContactBtn')))el.onclick=addContact;
+    if((el=document.getElementById('saveSettingsBtn')))el.onclick=saveSettings;
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
     document.querySelectorAll('[data-delete-dm]').forEach(function(btn){btn.onclick=deleteDm;});
+    document.querySelectorAll('[data-rename-dm]').forEach(function(btn){btn.onclick=function(e){renameDm(e,btn.dataset.renameDm);};});
     document.querySelectorAll('[data-delete-contact]').forEach(function(btn){btn.onclick=deleteContact;});
-
-    document.querySelectorAll('[data-select-contact]').forEach(function(btn){
-      btn.onclick=function(){selectedContact=btn.dataset.selectContact;view='front';render();setTimeout(renderCanvas,50);};
-    });
-    document.querySelectorAll('[data-photo-contact]').forEach(function(input){
-      input.onchange=function(e){uploadContactAsset(e,input.dataset.photoContact,'photo');};
-    });
-    document.querySelectorAll('[data-qr-contact]').forEach(function(input){
-      input.onchange=function(e){uploadContactAsset(e,input.dataset.qrContact,'qr');};
-    });
-    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){
-      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deletePhoto,'photo');};
-    });
-    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){
-      btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deleteQr,'qr');};
-    });
-
-    document.querySelectorAll('[data-photo-adjust]').forEach(function(input){
-      input.oninput=function(){ previewPhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value); };
-      input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value); };
-    });
-
-    document.querySelectorAll('[data-photo-adjust-number]').forEach(function(input){
-      input.oninput=function(){ previewPhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
-      input.onchange=function(){ savePhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value); };
-    });
-
-    document.querySelectorAll('[data-reset-photo-adjust]').forEach(function(btn){
-      btn.onclick=function(){ resetPhotoAdjust(btn.dataset.resetPhotoAdjust); };
-    });
-
-    document.querySelectorAll('[data-qr-adjust]').forEach(function(input){
-      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
-      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value); };
-    });
-
-    document.querySelectorAll('[data-qr-adjust-number]').forEach(function(input){
-      input.oninput=function(){ previewQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
-      input.onchange=function(){ saveQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value); };
-    });
-
-    document.querySelectorAll('[data-reset-qr-adjust]').forEach(function(btn){
-      btn.onclick=function(){ resetQrAdjust(btn.dataset.resetQrAdjust); };
-    });
-
-    var ff=document.getElementById('fontFamily'); if(ff)ff.value=settings.fontFamily;
-    var fw=document.getElementById('fontWeight'); if(fw)fw.value=settings.fontWeight;
-    var bg=document.getElementById('bgEnabled'); if(bg)bg.value=String(!!settings.bgEnabled);
+    document.querySelectorAll('[data-select-contact]').forEach(function(btn){btn.onclick=function(){selectedContact=btn.dataset.selectContact;selectedTeam=getTeamName(contacts.find(function(c){return c.id===selectedContact;})||{});view='front';render();setTimeout(renderCanvas,50);};});
+    document.querySelectorAll('[data-photo-contact]').forEach(function(input){input.onchange=function(e){uploadContactAsset(e,input.dataset.photoContact,'photo');};});
+    document.querySelectorAll('[data-qr-contact]').forEach(function(input){input.onchange=function(e){uploadContactAsset(e,input.dataset.qrContact,'qr');};});
+    document.querySelectorAll('[data-delete-photo]').forEach(function(btn){btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deletePhoto,'photo');};});
+    document.querySelectorAll('[data-delete-qr]').forEach(function(btn){btn.onclick=function(e){deleteContactAsset(e,btn.dataset.deleteQr,'qr');};});
+    document.querySelectorAll('[data-photo-adjust]').forEach(function(input){input.oninput=function(){previewPhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value);};input.onchange=function(){savePhotoAdjust(input.dataset.photoAdjust,input.dataset.adjustField,input.value);};});
+    document.querySelectorAll('[data-photo-adjust-number]').forEach(function(input){input.oninput=function(){previewPhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value);};input.onchange=function(){savePhotoAdjust(input.dataset.photoAdjustNumber,input.dataset.adjustField,input.value);};});
+    document.querySelectorAll('[data-reset-photo-adjust]').forEach(function(btn){btn.onclick=function(){resetPhotoAdjust(btn.dataset.resetPhotoAdjust);};});
+    document.querySelectorAll('[data-qr-adjust]').forEach(function(input){input.oninput=function(){previewQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value);};input.onchange=function(){saveQrAdjust(input.dataset.qrAdjust,input.dataset.adjustField,input.value);};});
+    document.querySelectorAll('[data-qr-adjust-number]').forEach(function(input){input.oninput=function(){previewQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value);};input.onchange=function(){saveQrAdjust(input.dataset.qrAdjustNumber,input.dataset.adjustField,input.value);};});
+    document.querySelectorAll('[data-reset-qr-adjust]').forEach(function(btn){btn.onclick=function(){resetQrAdjust(btn.dataset.resetQrAdjust);};});
+    var ff=document.getElementById('fontFamily');if(ff)ff.value=settings.fontFamily;var fw=document.getElementById('fontWeight');if(fw)fw.value=settings.fontWeight;var bg=document.getElementById('bgEnabled');if(bg)bg.value=String(!!settings.bgEnabled);
   }
 
-  function options(items,selected,label,empty){return '<option value="">'+empty+'</option>'+items.map(function(x){return '<option value="'+x.id+'" '+(x.id===selected?'selected':'')+'>'+escapeHtml(x[label]||'未命名')+'</option>';}).join('');}
-  function contactOptions(){return '<option value="">請選擇聯絡人</option>'+contacts.map(function(c){return '<option value="'+c.id+'" '+(c.id===selectedContact?'selected':'')+'>'+escapeHtml(c.name||'未命名')+'｜'+escapeHtml(c.title||'')+'｜'+escapeHtml(c.phone||'')+'</option>';}).join('');}
+  
+  function isLineBrowser(){ return /Line\//i.test(navigator.userAgent || ''); }
+  function isMobileBrowser(){ return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || ''); }
+  function getTeamName(c){ return String((c && (c.team || c.company)) || '未分類團隊').trim() || '未分類團隊'; }
+  function uniqueTeams(){ var map={}; contacts.forEach(function(c){map[getTeamName(c)]=true;}); return Object.keys(map).sort(function(a,b){return a.localeCompare(b,'zh-Hant');}); }
+  function filteredContacts(){ var list=contacts||[]; if(!selectedTeam)return list; return list.filter(function(c){return getTeamName(c)===selectedTeam;}); }
+  function ensureSelectedContactInTeam(){ var list=filteredContacts(); if(selectedContact&&list.some(function(c){return c.id===selectedContact;}))return; selectedContact=list[0]?list[0].id:''; }
+  function openPicker(title,items,onSelect){
+    var old=document.getElementById('linePickerModal'); if(old)old.remove();
+    var modal=document.createElement('div'); modal.id='linePickerModal'; modal.className='line-picker-modal';
+    var html='<div class="line-picker-panel"><div class="line-picker-head"><strong>'+escapeHtml(title)+'</strong><button type="button" id="linePickerClose">關閉</button></div><div class="line-picker-list">';
+    items.forEach(function(item){html+='<button type="button" class="line-picker-item" data-value="'+escapeAttr(item.value)+'">'+escapeHtml(item.label)+'</button>';});
+    html+='</div></div>'; modal.innerHTML=html; document.body.appendChild(modal);
+    document.getElementById('linePickerClose').onclick=function(){modal.remove();};
+    modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+    modal.querySelectorAll('.line-picker-item').forEach(function(btn){btn.onclick=function(){var v=btn.getAttribute('data-value')||'';modal.remove();onSelect(v);};});
+  }
+  function pickerItemsFromDms(){return dms.map(function(d){return {value:d.id,label:d.name||'未命名 DM'};});}
+  function pickerItemsFromTeams(){var items=[{value:'',label:'全部團隊'}];uniqueTeams().forEach(function(t){items.push({value:t,label:t});});return items;}
+  function pickerItemsFromContacts(){return filteredContacts().map(function(c){return {value:c.id,label:(c.name||'未命名')+(c.title?'｜'+c.title:'')+(c.phone?'｜'+c.phone:'')};});}
+function options(items,selected,label,empty){return '<option value="">'+empty+'</option>'+items.map(function(x){return '<option value="'+x.id+'" '+(x.id===selected?'selected':'')+'>'+escapeHtml(x[label]||'未命名')+'</option>';}).join('');}
+  function teamOptions(){return '<option value="">全部團隊</option>'+uniqueTeams().map(function(t){return '<option value="'+escapeAttr(t)+'" '+(t===selectedTeam?'selected':'')+'>'+escapeHtml(t)+'</option>';}).join('');}
+  function contactOptions(){var list=filteredContacts();return '<option value="">請選擇聯絡人</option>'+list.map(function(c){return '<option value="'+c.id+'" '+(c.id===selectedContact?'selected':'')+'>'+escapeHtml(c.name||'未命名')+'｜'+escapeHtml(c.title||'')+'｜'+escapeHtml(c.phone||'')+'</option>';}).join('');}
   function getSelectedContact(){
     return contacts.find(function(x){return x.id===selectedContact;}) || contacts[0] || null;
   }
 
-  function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span><div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
-  function contactCards(){
-    if(!contacts.length) return '<div class="empty">尚無通訊錄</div>';
-    return contacts.map(function(c){
-      var photoUrl=c.photo_url||c.avatar_url||'';
-      var qrUrl=c.qr_url||c.qr_code_url||'';
-      var hasPhoto=!!photoUrl;
-      var hasQr=!!qrUrl;
-      var ox=numOr(c.photo_offset_x,0);
-      var oy=numOr(c.photo_offset_y,0);
-      var sc=numOr(c.photo_scale,1);
-      return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'">' +
-        '<div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3>' +
-        '<p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(c.company||'')+' '+escapeHtml(c.address||'')+'</p>' +
-        '<div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div>' +
-        '<div class="asset-panel fixed-asset-panel">' +
-          '<div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>' +
-            (user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'') +
-            (user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div>' +
-              '<label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label>' +
-              '<label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label>' +
-              '<label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label>' +
-              '<button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'') +
-          '</div>' +
-          '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
-            (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'') +
-            (user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div>' +
-              '<label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label>' +
-              '<label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label>' +
-              '<label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label>' +
-              '<button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'') +
-          '</div>' +
-        '</div></div>';
-    }).join('');
-  }
+  function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span>'+(admin&&user?'<div class="field dm-rename-field"><label>DM 名稱</label><input data-dm-name="'+d.id+'" value="'+escapeAttr(d.name||'')+'"><button class="btn line small" data-rename-dm="'+d.id+'" type="button">儲存名稱</button></div>':'')+'<div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
+  function contactCards(){if(!contacts.length)return '<div class="empty">尚無通訊錄</div>';var grouped={};contacts.forEach(function(c){var t=getTeamName(c);if(!grouped[t])grouped[t]=[];grouped[t].push(c);});return Object.keys(grouped).sort(function(a,b){return a.localeCompare(b,'zh-Hant');}).map(function(team){return '<div class="team-group"><h3 class="team-heading">'+escapeHtml(team)+'</h3>'+grouped[team].map(function(c){var photoUrl=c.photo_url||c.avatar_url||'';var qrUrl=c.qr_url||c.qr_code_url||'';var hasPhoto=!!photoUrl;var hasQr=!!qrUrl;var ox=numOr(c.photo_offset_x,0);var oy=numOr(c.photo_offset_y,0);var sc=numOr(c.photo_scale,1);return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'" data-contact-card-id="'+c.id+'"><div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3><p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(getTeamName(c))+' '+escapeHtml(c.address||'')+'</p><div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div><div class="asset-panel fixed-asset-panel"><div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>'+(user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'')+(user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div><label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label><label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label><label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label><button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'')+'</div><div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>'+(user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'')+(user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div><label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label><label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label><label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label><button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'')+'</div></div></div>';}).join('')+'</div>';}).join('');}
 
   async function login(){var email=document.getElementById('loginEmail').value.trim();var pw=document.getElementById('loginPassword').value;var res=await sb.auth.signInWithPassword({email:email,password:pw}); if(res.error)notice('登入失敗：'+res.error.message); else {user=res.data.user; notice('登入成功'); loadAll();}}
   async function logout(){await sb.auth.signOut(); user=null; notice('已登出'); loadAll();}
   async function addLog(action,detail){try{await sb.from('access_logs').insert({action:action,detail:detail||''});}catch(e){}}
-  async function uploadDms(){if(!user)return notice('請先登入後台。'); if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。'); for(var i=0;i<pendingFiles.length;i++){var file=pendingFiles[i]; if(/[\u4e00-\u9fa5\s'"\\/]/.test(file.name)){notice('檔名含中文、空格或特殊符號，請改成英文檔名再上傳：'+file.name); return;} var path='dm/'+safeName(file.name); var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'}); if(up.error){notice('上傳失敗：'+up.error.message); return;} var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl; var ins=await sb.from('dm_items').insert({name:file.name.replace(/\.[^.]+$/,''),category:'已排版DM',image_url:url,is_active:true}); if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message); return;} } await addLog('上傳並發布DM',String(pendingFiles.length)+' 張'); pendingFiles=[]; notice('DM 已上傳並發布。'); loadAll();}
+  async function uploadDms(){
+    if(!user)return notice('請先登入後台。');
+    if(!pendingFiles.length)return notice('請先選擇 DM 圖檔。');
+    var customNameEl=document.getElementById('dmUploadName');
+    var customName=(customNameEl&&customNameEl.value||'').trim();
+    for(var i=0;i<pendingFiles.length;i++){
+      var file=pendingFiles[i];
+      var path='dm/'+safeName(file.name);
+      var up=await sb.storage.from(bucket()).upload(path,file,{upsert:true,contentType:file.type||'image/jpeg'});
+      if(up.error){notice('上傳失敗：'+up.error.message);return;}
+      var url=sb.storage.from(bucket()).getPublicUrl(path).data.publicUrl;
+      var finalName=customName||file.name.replace(/\.[^.]+$/,'');
+      if(customName&&pendingFiles.length>1)finalName=customName+'-'+(i+1);
+      var ins=await sb.from('dm_items').insert({name:finalName,category:'已排版DM',image_url:url,is_active:true});
+      if(ins.error){notice('DM 資料寫入失敗：'+ins.error.message);return;}
+    }
+    await addLog('上傳並發布DM',String(pendingFiles.length)+' 張');
+    pendingFiles=[];
+    if(customNameEl)customNameEl.value='';
+    notice('DM 已上傳並發布。');
+    loadAll();
+  }
+
   function keepScrollPosition(fn){
     var x = window.scrollX || window.pageXOffset || 0;
     var y = window.scrollY || window.pageYOffset || 0;
@@ -375,6 +349,21 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     await loadAll();
     setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 0);
     setTimeout(function(){ window.scrollTo(scrollX,scrollY); }, 100);
+  }
+
+  async function renameDm(e,dmId){
+    if(e&&e.stopPropagation)e.stopPropagation();
+    if(!user)return notice('請先登入後台。');
+    var input=document.querySelector('[data-dm-name="'+dmId+'"]');
+    var name=(input&&input.value||'').trim();
+    if(!name)return notice('請先輸入 DM 名稱。');
+    var res=await sb.from('dm_items').update({name:name}).eq('id',dmId);
+    if(res.error)return notice('DM 名稱更新失敗：'+res.error.message);
+    var d=dms.find(function(x){return x.id===dmId;});
+    if(d)d.name=name;
+    await addLog('修改DM名稱',name);
+    notice('DM 名稱已更新。');
+    render();
   }
 
   async function deleteDm(e){e.stopPropagation(); if(!confirm('確定要下架這張 DM？'))return; await sb.from('dm_items').update({is_active:false}).eq('id',e.target.dataset.deleteDm); await addLog('下架DM',e.target.dataset.deleteDm); loadAll();}
@@ -558,9 +547,12 @@ async function downloadCanvas(){
     var box=document.createElement('div');
     box.id='mobileDownloadFallback';
     box.className='mobile-download-fallback';
-    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button>';
+    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button><img id="mobileDownloadPreviewImg" alt="DM圖片預覽">';
 
     document.body.appendChild(box);
+
+    var preview=document.getElementById('mobileDownloadPreviewImg');
+    if(preview) preview.src=url;
 
     var btn=document.getElementById('openMobileImageBtn');
     if(btn){

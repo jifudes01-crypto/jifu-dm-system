@@ -1,3 +1,4 @@
+/* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
 /* JIFU_RESTORE_FEATURES_CLEAN_20260528 */
 /* JIFU_QR_INDEPENDENT_ADJUSTER_20260528 */
 /* JIFU_FINAL_QR_TIGHT_LAYOUT_20260528 */
@@ -112,3 +113,22 @@
 }
 .mobile-download-fallback button + button{background:#e9eef2;color:#123a55;}
 .contact-card{scroll-margin-top:120px;}
+
+
+/* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
+.line-fallback-btn{display:none;margin-top:8px;}
+.line-browser .line-fallback-btn,.mobile-browser .line-fallback-btn{display:block;}
+.line-hint{background:#fff6d8;border:1px solid #eadca7;color:#6d4d00;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;}
+.line-picker-modal{position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center;}
+.line-picker-panel{width:100%;max-height:78vh;background:#fff;border-radius:20px 20px 0 0;padding:14px;overflow:hidden;box-shadow:0 -12px 30px rgba(0,0,0,.22);}
+.line-picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #e4ddd3;}
+.line-picker-head strong{font-size:18px;color:#123a55;}
+.line-picker-head button{border:0;border-radius:10px;padding:8px 12px;background:#e9eef2;color:#123a55;font-weight:900;}
+.line-picker-list{overflow:auto;max-height:65vh;padding:10px 0;}
+.line-picker-item{display:block;width:100%;border:0;border-bottom:1px solid #eee6dc;background:#fff;text-align:left;padding:16px 12px;font-size:17px;font-weight:800;color:#123a55;}
+.team-group{grid-column:1 / -1;margin-top:16px;}
+.team-heading{margin:12px 0;padding:10px 14px;border-radius:12px;background:#e8f5ee;color:#17684f;font-size:18px;}
+.dm-rename-field{margin-top:10px;}
+.dm-rename-field input{margin-bottom:8px;}
+select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action:manipulation;}
+.mobile-download-fallback img{max-width:100%;border-radius:12px;border:1px solid #e4ddd3;margin-top:10px;}
