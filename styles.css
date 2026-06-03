@@ -137,6 +137,11 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
 
 
 /* JIFU_BROKER_IPHONE_FIX_20260603 */
+
+.broker-size-panel{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:14px;align-items:end;border:1px solid #dfd8cc;border-radius:16px;background:#fffaf0;padding:14px;margin:14px 0 18px;}
+.broker-size-panel input{width:100%;}
+@media(max-width:720px){.broker-size-panel{grid-template-columns:1fr;}}
+
 .broker-grid{display:grid;gap:14px;}
 .broker-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,1.2fr);gap:14px;align-items:start;border:1px solid #dfd8cc;border-radius:16px;background:#fff;padding:14px;}
 .broker-card strong{font-size:18px;color:#123a55;}

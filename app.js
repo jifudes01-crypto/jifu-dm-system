@@ -1,4 +1,4 @@
-/* JIFU_BROKER_LINE_CANVAS_20260603 */
+/* JIFU_BROKER_LINE_SIZE_CONTROL_20260603 */
 /* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
 /* JIFU_BROKER_IPHONE_FIX_20260603 */
 /* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
@@ -25,7 +25,7 @@
   var settings=defaultSettings();
   var pendingFiles=[];
 
-  function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118};}
+  function defaultSettings(){return {x:950,y:58,w:452,h:142,nameSize:34,titleSize:24,phoneSize:26,companySize:18,nameGap:8,subGap:8,paddingX:18,paddingY:8,fontFamily:'Microsoft JhengHei',fontWeight:'bold',color:'#000000',bgEnabled:false,photoX:1268,photoY:68,photoSize:118,qrX:1268,qrY:68,qrSize:118,brokerLineSize:18};}
     function numOr(v, fallback){
     var n = Number(v);
     return Number.isFinite(n) ? n : fallback;
@@ -127,7 +127,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     '</div>' +
     '<div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司 / 團隊</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div>' +
     '<div class="compact-contact-list" style="margin-top:18px">'+contactCards()+'</div></section>' +
-    '<section class="card"><h2>不動產經紀人選單管理</h2><p class="muted">前台會依團隊篩選經紀人。可在這裡新增、修改、刪除經紀人選單內容。</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>團隊</label><input id="brokerTeam" placeholder="例如：祥億團隊"></div><div class="field"><label>經紀人姓名</label><input id="brokerName" placeholder="例如：王小明"></div><div class="field"><label>證號 / 備註</label><input id="brokerLicense" placeholder="例如：(112)新北經字第000000號"></div><div class="field"><label>&nbsp;</label><button id="addBrokerBtn" class="btn primary">新增經紀人</button></div></div></div><div class="broker-grid" style="margin-top:18px">'+brokerCards()+'</div></section>';
+    '<section class="card"><h2>不動產經紀人選單管理</h2><p class="muted">前台會依團隊篩選經紀人。可在這裡新增、修改、刪除經紀人選單內容；DM 右上方紅框位置的字體大小也在這裡調整。</p><div class="broker-size-panel"><div class="field"><label>DM 上不動產經紀人字體大小</label><input id="brokerLineSize" type="number" min="12" max="32" step="1" value="'+escapeAttr(settings.brokerLineSize||18)+'"><small>建議 18px，約等於你要的 10pt 視覺大小。數字越大，DM 上紅框位置文字越大。</small></div><div class="field"><label>&nbsp;</label><button id="saveBrokerLineSizeBtn" class="btn primary" type="button">儲存字體大小</button></div></div><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>團隊</label><input id="brokerTeam" placeholder="例如：祥億團隊"></div><div class="field"><label>經紀人姓名</label><input id="brokerName" placeholder="例如：王小明"></div><div class="field"><label>證號 / 備註</label><input id="brokerLicense" placeholder="例如：(112)新北經字第000000號"></div><div class="field"><label>&nbsp;</label><button id="addBrokerBtn" class="btn primary">新增經紀人</button></div></div></div><div class="broker-grid" style="margin-top:18px">'+brokerCards()+'</div></section>';
   }
   function settingsHtml(){
     return '<section class="card"><h2>右上角聯絡資訊欄位設定</h2><p class="muted">所有設定都會存到雲端。這些欄位只控制右上角白色聯絡資訊框，不會影響物件格。</p><div class="row4"><div class="field"><label>姓名字級</label><input id="nameSize" type="number" value="'+settings.nameSize+'"></div><div class="field"><label>職稱字級</label><input id="titleSize" type="number" value="'+settings.titleSize+'"></div><div class="field"><label>電話字級</label><input id="phoneSize" type="number" value="'+settings.phoneSize+'"></div><div class="field"><label>公司/地址字級</label><input id="companySize" type="number" value="'+settings.companySize+'"></div></div><div class="row4"><div class="field"><label>姓名區行距</label><input id="nameGap" type="number" value="'+settings.nameGap+'"></div><div class="field"><label>下方資訊行距</label><input id="subGap" type="number" value="'+settings.subGap+'"></div><div class="field"><label>左右內距</label><input id="paddingX" type="number" value="'+settings.paddingX+'"></div><div class="field"><label>上下內距</label><input id="paddingY" type="number" value="'+settings.paddingY+'"></div></div><div class="row"><div class="field"><label>字型</label><select id="fontFamily"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>MingLiU</option><option>DFKai-SB</option><option>Arial</option><option>Tahoma</option></select></div><div class="field"><label>文字粗細</label><select id="fontWeight"><option value="normal">一般</option><option value="600">SemiBold</option><option value="bold">粗體</option><option value="900">超粗</option></select></div></div><div class="row"><div class="field"><label>文字顏色</label><input id="fontColor" type="color" value="'+settings.color+'"></div><div class="field"><label>聯絡區背景</label><select id="bgEnabled"><option value="false">不要底色，使用公版白色框</option><option value="true">加半透明底色</option></select></div></div><button id="saveSettingsBtn" class="btn primary '+(!user?'hidden':'')+'">儲存設定到雲端</button><p class="admin-only-note '+(user?'hidden':'')+'">請先登入後台，才能儲存欄位設定。</p></section>';
@@ -157,6 +157,8 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if((el=document.getElementById('clearAdminContactFilter'))) el.onclick=function(){adminContactTeamFilter='';adminContactKeyword='';render();};
 
     if((el=document.getElementById('addBrokerBtn')))el.onclick=addBroker;
+    if((el=document.getElementById('brokerLineSize'))){el.oninput=function(){previewBrokerLineSize(this.value);};}
+    if((el=document.getElementById('saveBrokerLineSizeBtn')))el.onclick=saveBrokerLineSize;
     if((el=document.getElementById('saveSettingsBtn')))el.onclick=saveSettings;
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
     document.querySelectorAll('[data-delete-dm]').forEach(function(btn){btn.onclick=deleteDm;});
@@ -592,11 +594,25 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
   async function addContact(){if(!user)return notice('請先登入後台。'); var row={name:val('cName')||'未命名',title:val('cTitle'),phone:val('cPhone'),company:val('cCompany'),address:val('cAddress'),is_active:true}; var res=await sb.from('contacts').insert(row); if(res.error)return notice('新增失敗：'+res.error.message); await addLog('新增聯絡人',row.name); notice('已新增聯絡人。'); loadAll();}
   async function deleteContact(e){if(!confirm('確定刪除這位聯絡人？'))return; await sb.from('contacts').update({is_active:false}).eq('id',e.target.dataset.deleteContact); await addLog('刪除聯絡人',e.target.dataset.deleteContact); loadAll();}
   function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
-  async function saveSettings(){settings=Object.assign({},settings,{nameSize:+val('nameSize')||34,titleSize:+val('titleSize')||24,phoneSize:+val('phoneSize')||26,companySize:+val('companySize')||18,nameGap:+val('nameGap')||8,subGap:+val('subGap')||8,paddingX:+val('paddingX')||18,paddingY:+val('paddingY')||8,fontFamily:val('fontFamily')||'Microsoft JhengHei',fontWeight:val('fontWeight')||'bold',color:val('fontColor')||'#000000',bgEnabled:val('bgEnabled')==='true'}); var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()}); if(res.error)return notice('設定儲存失敗：'+res.error.message); await addLog('更新欄位設定',''); notice('設定已儲存。'); renderCanvas();}
+  async function saveSettings(){settings=Object.assign({},settings,{nameSize:+val('nameSize')||34,titleSize:+val('titleSize')||24,phoneSize:+val('phoneSize')||26,companySize:+val('companySize')||18,nameGap:+val('nameGap')||8,subGap:+val('subGap')||8,paddingX:+val('paddingX')||18,paddingY:+val('paddingY')||8,fontFamily:val('fontFamily')||'Microsoft JhengHei',fontWeight:val('fontWeight')||'bold',color:val('fontColor')||'#000000',bgEnabled:val('bgEnabled')==='true',brokerLineSize:numOr(settings.brokerLineSize,18)}); var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()}); if(res.error)return notice('設定儲存失敗：'+res.error.message); await addLog('更新欄位設定',''); notice('設定已儲存。'); renderCanvas();}
+
+  function previewBrokerLineSize(value){
+    settings.brokerLineSize=Math.max(12,Math.min(32,numOr(value,18)));
+    renderCanvas();
+  }
+
+  async function saveBrokerLineSize(){
+    settings.brokerLineSize=Math.max(12,Math.min(32,numOr(val('brokerLineSize'),18)));
+    var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()});
+    if(res.error)return notice('不動產經紀人字體大小儲存失敗：'+res.error.message);
+    await addLog('更新經紀人字體大小',String(settings.brokerLineSize));
+    notice('不動產經紀人字體大小已儲存。');
+    renderCanvas();
+  }
 
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
-  async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx); drawBrokerLine(ctx);}
+  async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
   async function drawContact(ctx){
     var c=getSelectedContact()||{};
     var family=settings.fontFamily||'Microsoft JhengHei';
@@ -646,40 +662,24 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     if(photo){
       drawPortraitFreeScale(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
     }
+
+    drawBrokerLine(ctx);
   }
 
   function drawBrokerLine(ctx){
-    var broker=getSelectedBroker?getSelectedBroker():null;
+    var broker=getSelectedBroker ? getSelectedBroker() : null;
     if(!broker)return;
-
-    var name=String(broker.name||'').trim();
-    var license=String(broker.license_no||'').trim();
-    var text='不動產經紀人：'+name+(license?'｜'+license:'');
-    if(!name && !license)return;
-
     var family=settings.fontFamily||'Microsoft JhengHei';
+    var size=Math.max(12,Math.min(32,numOr(settings.brokerLineSize,18)));
+    var text='不動產經紀人：'+(broker.name||'')+(broker.license_no?'｜'+broker.license_no:'');
+    if(!text.replace('不動產經紀人：','').trim())return;
     ctx.save();
-    ctx.fillStyle='#222';
-    ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#333333';
     ctx.textAlign='right';
-    ctx.font='500 13px "'+family+'", Arial';
-
-    // 位置：右上聯絡資訊框下方、第一排物件上方，也就是使用者紅框標示的空白區。
-    fitRightText(ctx,text,1432,292,500,13);
+    ctx.textBaseline='alphabetic';
+    ctx.font='600 '+size+'px "'+family+'", Arial';
+    fitTextRight(ctx,text,1428,320,560,size+8,12);
     ctx.restore();
-  }
-
-  function fitRightText(ctx,text,x,y,maxW,minSize){
-    text=String(text||'');
-    if(!text)return;
-    var original=ctx.font;
-    var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||13,10);
-    while(ctx.measureText(text).width>maxW && size>(minSize||10)){
-      size--;
-      ctx.font=ctx.font.replace(/\d+px/,size+'px');
-    }
-    ctx.fillText(text,x,y);
-    ctx.font=original;
   }
 
 function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
@@ -699,6 +699,7 @@ function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
   }
 
 function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
+function fitTextRight(ctx,text,x,y,maxW,maxH,minSize){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); minSize=Number(minSize||10); while(ctx.measureText(text).width>maxW && size>minSize){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='right';ctx.fillText(text,x,y);ctx.font=original;}
   function drawCover(ctx,img,x,y,w,h){var scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,y,w,h);}
   function drawContain(ctx,img,x,y,w,h){var scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.drawImage(img,x+(w-dw)/2,y+(h-dh)/2,dw,dh);}
       function drawQrImage(ctx,img,x,y,size){
