@@ -1,3 +1,4 @@
+/* JIFU_BROKER_LINE_CANVAS_20260603 */
 /* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
 /* JIFU_BROKER_IPHONE_FIX_20260603 */
 /* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
@@ -595,7 +596,7 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
 
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
-  async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
+  async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx); drawBrokerLine(ctx);}
   async function drawContact(ctx){
     var c=getSelectedContact()||{};
     var family=settings.fontFamily||'Microsoft JhengHei';
@@ -645,6 +646,40 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     if(photo){
       drawPortraitFreeScale(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
     }
+  }
+
+  function drawBrokerLine(ctx){
+    var broker=getSelectedBroker?getSelectedBroker():null;
+    if(!broker)return;
+
+    var name=String(broker.name||'').trim();
+    var license=String(broker.license_no||'').trim();
+    var text='不動產經紀人：'+name+(license?'｜'+license:'');
+    if(!name && !license)return;
+
+    var family=settings.fontFamily||'Microsoft JhengHei';
+    ctx.save();
+    ctx.fillStyle='#222';
+    ctx.textBaseline='alphabetic';
+    ctx.textAlign='right';
+    ctx.font='500 13px "'+family+'", Arial';
+
+    // 位置：右上聯絡資訊框下方、第一排物件上方，也就是使用者紅框標示的空白區。
+    fitRightText(ctx,text,1432,292,500,13);
+    ctx.restore();
+  }
+
+  function fitRightText(ctx,text,x,y,maxW,minSize){
+    text=String(text||'');
+    if(!text)return;
+    var original=ctx.font;
+    var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||13,10);
+    while(ctx.measureText(text).width>maxW && size>(minSize||10)){
+      size--;
+      ctx.font=ctx.font.replace(/\d+px/,size+'px');
+    }
+    ctx.fillText(text,x,y);
+    ctx.font=original;
   }
 
 function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
