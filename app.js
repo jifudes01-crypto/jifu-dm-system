@@ -1,3 +1,4 @@
+/* JIFU_FRONT_AUTO_TEAM_BROKER_20260603 */
 /* JIFU_BROKER_LINE_POSITION_CONTROL_20260603 */
 /* JIFU_BROKER_LINE_SIZE_CONTROL_20260603 */
 /* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
@@ -109,12 +110,12 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>'+lineHint+
       '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
       '<div class="field"><label>選擇團隊</label><select id="teamSelect">'+teamOptions()+'</select><button id="teamPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇團隊</button></div>'+
-      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
-      '<div class="field"><label>選擇不動產經紀人</label><select id="brokerSelect">'+brokerOptions()+'</select><small>依團隊自動篩選，可在後台新增與編輯。</small><button id="brokerPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇經紀人</button></div>'+
-      '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p><p class="mini-broker">經紀人：'+escapeHtml(broker?(broker.name||'未命名經紀人'):'尚未選擇')+(broker&&broker.license_no?'｜'+escapeHtml(broker.license_no):'')+'</p></div><div class="mini-assets">'+
+      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。不動產經紀人由後台團隊綁定自動套入，前台不用選。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
+      '<div class="auto-broker-note"><strong>不動產經紀人自動套入</strong><span>'+escapeHtml(broker?((broker.name||'未命名經紀人')+(broker.license_no?'｜'+broker.license_no:'')):'此團隊尚未綁定經紀人')+'</span></div>'+
+      '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p><p class="mini-broker">經紀人：'+escapeHtml(broker?(broker.name||'未命名經紀人'):'此團隊尚未綁定')+(broker&&broker.license_no?'｜'+escapeHtml(broker.license_no):'')+'</p></div><div class="mini-assets">'+
       (photoUrl?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>無形象照</span>')+
       (qrUrl?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>無 QR</span>')+
-      '</div></div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、團隊、業務與不動產經紀人，即可產生 DM。上傳與編輯請到後台管理。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
+      '</div></div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、團隊與業務，即可產生 DM；不動產經紀人會依後台綁定的團隊自動套入。上傳與編輯請到後台管理。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
   }
   function adminHtml(){
     return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><div class="field"><label>DM 名稱</label><input id="dmUploadName" placeholder="例如：26年5月農地版第一期"></div><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">可先輸入 DM 名稱再上傳。若一次多張，系統會自動在後面加序號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
@@ -139,12 +140,10 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var el; document.body.classList.toggle('line-browser',isLineBrowser()); document.body.classList.toggle('mobile-browser',isMobileBrowser());
     if((el=document.getElementById('dmSelect'))){el.onchange=function(){selectedDm=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
     if((el=document.getElementById('teamSelect'))){el.onchange=function(){selectedTeam=this.value;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
-    if((el=document.getElementById('contactSelect'))){el.onchange=function(){selectedContact=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
-    if((el=document.getElementById('brokerSelect'))){el.onchange=function(){selectedBroker=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇經紀人',pickerItemsFromBrokers(),function(v){selectedBroker=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
-    if((el=document.getElementById('dmPickerBtn')))el.onclick=function(){openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('contactSelect'))){el.onchange=function(){selectedContact=this.value;ensureSelectedBrokerInTeam();render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
+        if((el=document.getElementById('dmPickerBtn')))el.onclick=function(){openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});};
     if((el=document.getElementById('teamPickerBtn')))el.onclick=function(){openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});};
-    if((el=document.getElementById('contactPickerBtn')))el.onclick=function(){openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});};
-    if((el=document.getElementById('brokerPickerBtn')))el.onclick=function(){openPicker('選擇經紀人',pickerItemsFromBrokers(),function(v){selectedBroker=v;render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('contactPickerBtn')))el.onclick=function(){openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});};
     if((el=document.getElementById('renderBtn')))el.onclick=renderCanvas;
     if((el=document.getElementById('downloadBtn')))el.onclick=downloadCanvas;
     if((el=document.getElementById('loginBtn')))el.onclick=login;
@@ -234,19 +233,26 @@ function openPicker(title,items,onSelect){
   function pickerItemsFromTeams(){var items=[{value:'',label:'全部團隊'}];uniqueTeams().forEach(function(t){items.push({value:t,label:t});});return items;}
   function pickerItemsFromContacts(){return filteredContacts().map(function(c){return {value:c.id,label:(c.name||'未命名')+(c.title?'｜'+c.title:'')+(c.phone?'｜'+c.phone:'')};});}
 
+  function getBrokerTeamKey(){
+    var c=getSelectedContact ? getSelectedContact() : null;
+    if(c) return getTeamName(c);
+    return selectedTeam || '';
+  }
+
   function filteredBrokers(){
     var list = brokers || [];
-    if(!selectedTeam) return list;
-    return list.filter(function(b){ return getTeamName(b) === selectedTeam; });
+    var team = getBrokerTeamKey();
+    if(!team) return list;
+    return list.filter(function(b){ return getTeamName(b) === team; });
   }
 
   function ensureSelectedBrokerInTeam(){
     var list = filteredBrokers();
-    if(selectedBroker && list.some(function(b){ return b.id === selectedBroker; })) return;
     selectedBroker = list[0] ? list[0].id : '';
   }
 
   function getSelectedBroker(){
+    ensureSelectedBrokerInTeam();
     return (brokers || []).find(function(b){ return b.id === selectedBroker; }) || null;
   }
 
