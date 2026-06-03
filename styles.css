@@ -363,27 +363,15 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
   line-height:1;
   flex:0 0 auto;
 }
-.mobile-save-actions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:12px;
-}
-.mobile-save-actions button,
-.mobile-save-actions a{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:42px;
-  padding:10px 14px;
-  border:0;
+.mobile-save-note{
+  margin:0 0 12px;
+  padding:10px 12px;
   border-radius:12px;
-  background:#073966;
-  color:#fff;
-  text-decoration:none;
-  font-weight:900;
+  background:#eef6fb;
+  color:#123a55;
+  font-weight:800;
+  line-height:1.45;
 }
-.mobile-save-actions a{background:#c9a45c;}
 #mobileDownloadPreviewImg{
   display:block;
   width:100%;
@@ -459,30 +447,6 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
 }
 @media(max-width:700px){
   .mobile-download-fallback{border-radius:14px;padding:12px;}
-  .mobile-save-actions{display:grid;grid-template-columns:1fr;}
-  .mobile-save-actions button,.mobile-save-actions a{width:100%;}
   .inline-image-save-page{padding:10px;}
   .inline-image-save-toolbar{align-items:flex-start;}
-}
-
-
-/* Hard fix: LINE / Notion webview must save from same-page visible image, no popup required */
-.inline-image-save-page{
-  z-index:2147483647 !important;
-  pointer-events:auto !important;
-}
-.inline-image-save-page *{
-  pointer-events:auto !important;
-}
-#inlineImageSaveImg,
-#mobileDownloadPreviewImg{
-  -webkit-touch-callout:default !important;
-  -webkit-user-select:auto !important;
-  user-select:auto !important;
-  pointer-events:auto !important;
-  touch-action:auto !important;
-}
-#inlineImageSaveImg.is-touching,
-#mobileDownloadPreviewImg.is-touching{
-  outline:4px solid rgba(201,164,92,.45);
 }

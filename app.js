@@ -807,36 +807,32 @@ async function downloadCanvas(){
   }
 
   function forceSamePageImageSave(dataUrl,fileName){
-    // LINE / Notion 內建瀏覽器常會阻擋 window.open、download、blob 以及第二次點擊開頁。
-    // 所以手機與內建瀏覽器改成：按下載後立刻在同一頁顯示全螢幕圖片，使用者直接長按儲存。
+    // LINE / Notion / iPhone WebView may block window.open, target=_blank,
+    // <a download>, data: links, and blob: links. Do not trigger any external
+    // navigation here. Put the PNG image directly in the current page and open
+    // the full-screen long-press panel immediately.
     showMobileDownloadFallback(dataUrl,fileName);
+    openInlineImageSavePage(dataUrl,fileName);
     setTimeout(function(){
-      try{ openInlineImageSavePage(dataUrl,fileName); }catch(e){
-        var box=document.getElementById('mobileDownloadFallback');
-        if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
-      }
+      var img=document.getElementById('inlineImageSaveImg') || document.getElementById('mobileDownloadPreviewImg');
+      if(img)img.scrollIntoView({behavior:'smooth',block:'center'});
     },120);
-    notice('圖片已產生。請直接長按圖片儲存。');
+    notice('圖片已產生，請直接長按圖片儲存。');
   }
 
   function showMobileDownloadFallback(dataUrl,fileName){
     var old=document.getElementById('mobileDownloadFallback');
     if(old)old.remove();
-    var oldPage=document.getElementById('inlineImageSavePage');
-    if(oldPage)oldPage.remove();
 
     var box=document.createElement('div');
     box.id='mobileDownloadFallback';
     box.className='mobile-download-fallback';
     box.innerHTML=''
       +'<div class="mobile-save-head">'
-      +  '<div><strong>圖片已產生</strong><p>LINE、Notion、iPhone 若不能直接下載，請長按下方圖片，選擇「儲存圖片」或「加入照片」。</p><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div>'
+      +  '<div><strong>圖片已產生</strong><p>為避免 LINE / Notion / iPhone 阻擋下載，系統已直接在本頁顯示圖片。請長按圖片，選擇「儲存圖片」或「加入照片」。</p><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div>'
       +  '<button type="button" id="closeMobileImageBtn" aria-label="關閉">×</button>'
       +'</div>'
-      +'<div class="mobile-save-actions">'
-      +  '<button type="button" id="inlineSavePageBtn">開啟長按儲存頁</button>'
-      +  '<a id="directImageLink" href="#" download="'+escapeHtml(fileName||'jifu-dm.png')+'">一般下載</a>'
-      +'</div>'
+      +'<div class="mobile-save-note">不使用開新分頁、不使用外部 App、不使用 data/blob 下載連結。</div>'
       +'<img id="mobileDownloadPreviewImg" alt="DM圖片預覽，請長按儲存">';
 
     var canvasWrap=document.querySelector('.canvas-wrap');
@@ -849,28 +845,9 @@ async function downloadCanvas(){
     var preview=document.getElementById('mobileDownloadPreviewImg');
     if(preview){
       preview.src=dataUrl;
-      preview.onload=function(){ try{ preview.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} };
       preview.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
       preview.addEventListener('touchstart',function(){ preview.classList.add('is-touching'); },{passive:true});
       preview.addEventListener('touchend',function(){ preview.classList.remove('is-touching'); },{passive:true});
-    }
-
-    var direct=document.getElementById('directImageLink');
-    if(direct){
-      direct.href=dataUrl;
-      direct.setAttribute('download',fileName||'jifu-dm.png');
-    }
-
-    var pageBtn=document.getElementById('inlineSavePageBtn');
-    if(pageBtn){
-      var openHandler=function(ev){
-        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-        openInlineImageSavePage(dataUrl,fileName);
-        return false;
-      };
-      pageBtn.onclick=openHandler;
-      pageBtn.addEventListener('touchend',openHandler,{passive:false});
-      pageBtn.addEventListener('click',openHandler,false);
     }
 
     var close=document.getElementById('closeMobileImageBtn');
@@ -889,7 +866,7 @@ async function downloadCanvas(){
     page.innerHTML=''
       +'<div class="inline-image-save-toolbar">'
       +  '<button type="button" id="backFromInlineSave">返回編輯</button>'
-      +  '<div><strong>長按圖片儲存</strong><span>在 LINE / Notion 內建瀏覽器也不需開新分頁。</span></div>'
+      +  '<div><strong>長按圖片儲存</strong><span>已在同一頁顯示圖片，不會開啟外部應用程式。</span></div>'
       +'</div>'
       +'<div class="inline-image-save-instruction">請長按下方圖片，選擇「儲存圖片」或「加入照片」。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div>'
       +'<img id="inlineImageSaveImg" alt="DM圖片，請長按儲存">';
@@ -902,7 +879,6 @@ async function downloadCanvas(){
       img.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
       img.addEventListener('touchstart',function(){ img.classList.add('is-touching'); },{passive:true});
       img.addEventListener('touchend',function(){ img.classList.remove('is-touching'); },{passive:true});
-      setTimeout(function(){ try{ img.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} },80);
     }
 
     var back=document.getElementById('backFromInlineSave');
@@ -916,6 +892,7 @@ async function downloadCanvas(){
       };
     }
   }
+
 
 
   init();
