@@ -1,3 +1,4 @@
+/* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
 /* JIFU_BROKER_IPHONE_FIX_20260603 */
 /* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
 /* JIFU_RESTORE_FEATURES_CLEAN_20260528 */
@@ -18,6 +19,7 @@
   var sb=null,user=null,view='front';
   var dms=[],contacts=[],brokers=[],logs=[];
   var selectedDm='', selectedContact='', selectedTeam='', selectedBroker='';
+  var adminContactTeamFilter='', adminContactKeyword='';
   var assets={photo:'',qr:''};
   var settings=defaultSettings();
   var pendingFiles=[];
@@ -116,7 +118,14 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><div class="field"><label>DM 名稱</label><input id="dmUploadName" placeholder="例如：26年5月農地版第一期"></div><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">可先輸入 DM 名稱再上傳。若一次多張，系統會自動在後面加序號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
   }
   function contactsHtml(){
-    return '<section class="card"><h2>通訊錄管理</h2><p class="muted">前後台都會依「公司 / 團隊」自動分組。CSV 匯入欄位請用：name,title,phone,company,address</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司 / 團隊</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div><div class="contact-grid" style="margin-top:18px">'+contactCards()+'</div></section>'+
+    return '<section class="card"><h2>通訊錄管理</h2><p class="muted">前後台都會依「公司 / 團隊」自動分組。可用團隊下拉與關鍵字快速篩選業務，管理時不需要一直捲很久。</p>' +
+    '<div class="admin-contact-toolbar">' +
+      '<div class="field"><label>依團隊篩選</label><select id="adminContactTeamFilter">'+adminTeamOptions()+'</select></div>' +
+      '<div class="field"><label>搜尋姓名 / 電話 / 職稱 / 團隊</label><input id="adminContactKeyword" value="'+escapeAttr(adminContactKeyword||'')+'" placeholder="輸入關鍵字搜尋"></div>' +
+      '<div class="field toolbar-actions"><label>&nbsp;</label><button id="clearAdminContactFilter" class="btn line" type="button">清除篩選</button></div>' +
+    '</div>' +
+    '<div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司 / 團隊</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div>' +
+    '<div class="compact-contact-list" style="margin-top:18px">'+contactCards()+'</div></section>' +
     '<section class="card"><h2>不動產經紀人選單管理</h2><p class="muted">前台會依團隊篩選經紀人。可在這裡新增、修改、刪除經紀人選單內容。</p><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>團隊</label><input id="brokerTeam" placeholder="例如：祥億團隊"></div><div class="field"><label>經紀人姓名</label><input id="brokerName" placeholder="例如：王小明"></div><div class="field"><label>證號 / 備註</label><input id="brokerLicense" placeholder="例如：(112)新北經字第000000號"></div><div class="field"><label>&nbsp;</label><button id="addBrokerBtn" class="btn primary">新增經紀人</button></div></div></div><div class="broker-grid" style="margin-top:18px">'+brokerCards()+'</div></section>';
   }
   function settingsHtml(){
@@ -141,6 +150,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if((el=document.getElementById('dmUpload')))el.onchange=function(e){pendingFiles=Array.prototype.slice.call(e.target.files||[]);var p=document.getElementById('pendingInfo');if(p)p.textContent='已選擇 '+pendingFiles.length+' 張 DM';};
     if((el=document.getElementById('uploadBtn')))el.onclick=uploadDms;
     if((el=document.getElementById('addContactBtn')))el.onclick=addContact;
+
+    if((el=document.getElementById('adminContactTeamFilter'))) el.onchange=function(){adminContactTeamFilter=this.value;render();};
+    if((el=document.getElementById('adminContactKeyword'))) el.oninput=function(){adminContactKeyword=this.value;render();};
+    if((el=document.getElementById('clearAdminContactFilter'))) el.onclick=function(){adminContactTeamFilter='';adminContactKeyword='';render();};
+
     if((el=document.getElementById('addBrokerBtn')))el.onclick=addBroker;
     if((el=document.getElementById('saveSettingsBtn')))el.onclick=saveSettings;
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
@@ -170,7 +184,37 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   function uniqueTeams(){ var map={}; contacts.forEach(function(c){map[getTeamName(c)]=true;}); return Object.keys(map).sort(function(a,b){return a.localeCompare(b,'zh-Hant');}); }
   function filteredContacts(){ var list=contacts||[]; if(!selectedTeam)return list; return list.filter(function(c){return getTeamName(c)===selectedTeam;}); }
   function ensureSelectedContactInTeam(){ var list=filteredContacts(); if(selectedContact&&list.some(function(c){return c.id===selectedContact;}))return; selectedContact=list[0]?list[0].id:''; }
-  function openPicker(title,items,onSelect){
+  
+  function adminFilteredContacts(){
+    var list = contacts || [];
+    if(adminContactTeamFilter){
+      list = list.filter(function(c){ return getTeamName(c) === adminContactTeamFilter; });
+    }
+    if(adminContactKeyword){
+      var kw = String(adminContactKeyword).trim().toLowerCase();
+      if(kw){
+        list = list.filter(function(c){
+          return [
+            c.name,
+            c.title,
+            c.phone,
+            c.company,
+            c.team,
+            c.address
+          ].join(' ').toLowerCase().indexOf(kw) !== -1;
+        });
+      }
+    }
+    return list;
+  }
+
+  function adminTeamOptions(){
+    return '<option value="">全部團隊</option>'+uniqueTeams().map(function(t){
+      return '<option value="'+escapeAttr(t)+'" '+(t===adminContactTeamFilter?'selected':'')+'>'+escapeHtml(t)+'</option>';
+    }).join('');
+  }
+
+function openPicker(title,items,onSelect){
     var old=document.getElementById('linePickerModal'); if(old)old.remove();
     var modal=document.createElement('div'); modal.id='linePickerModal'; modal.className='line-picker-modal';
     var html='<div class="line-picker-panel"><div class="line-picker-head"><strong>'+escapeHtml(title)+'</strong><button type="button" id="linePickerClose">關閉</button></div><div class="line-picker-list">';
@@ -222,7 +266,60 @@ function options(items,selected,label,empty){return '<option value="">'+empty+'<
   }
 
   function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span>'+(admin&&user?'<div class="field dm-rename-field"><label>DM 名稱</label><input data-dm-name="'+d.id+'" value="'+escapeAttr(d.name||'')+'"><button class="btn line small" data-rename-dm="'+d.id+'" type="button">儲存名稱</button></div>':'')+'<div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
-  function contactCards(){if(!contacts.length)return '<div class="empty">尚無通訊錄</div>';var grouped={};contacts.forEach(function(c){var t=getTeamName(c);if(!grouped[t])grouped[t]=[];grouped[t].push(c);});return Object.keys(grouped).sort(function(a,b){return a.localeCompare(b,'zh-Hant');}).map(function(team){return '<div class="team-group"><h3 class="team-heading">'+escapeHtml(team)+'</h3>'+grouped[team].map(function(c){var photoUrl=c.photo_url||c.avatar_url||'';var qrUrl=c.qr_url||c.qr_code_url||'';var hasPhoto=!!photoUrl;var hasQr=!!qrUrl;var ox=numOr(c.photo_offset_x,0);var oy=numOr(c.photo_offset_y,0);var sc=numOr(c.photo_scale,1);return '<div class="contact-card '+(c.id===selectedContact?'active':'')+'" data-contact-card-id="'+c.id+'"><div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3><p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(getTeamName(c))+' '+escapeHtml(c.address||'')+'</p><div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div></div><div class="asset-panel fixed-asset-panel"><div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>'+(user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'')+(user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div><label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label><label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label><label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label><button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'')+'</div><div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>'+(user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'')+(user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div><label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label><label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label><label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label><button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'')+'</div></div></div>';}).join('')+'</div>';}).join('');}
+  function contactCards(){
+    var visibleContacts = adminFilteredContacts();
+    if(!visibleContacts.length) return '<div class="empty">目前篩選條件下沒有通訊錄資料</div>';
+
+    var grouped={};
+    visibleContacts.forEach(function(c){
+      var team=getTeamName(c);
+      if(!grouped[team]) grouped[team]=[];
+      grouped[team].push(c);
+    });
+
+    return Object.keys(grouped).sort(function(a,b){return a.localeCompare(b,'zh-Hant');}).map(function(team){
+      return '<div class="team-group compact-team-group"><h3 class="team-heading">'+escapeHtml(team)+' <span class="team-count">'+grouped[team].length+' 位</span></h3>'+
+        grouped[team].map(function(c){
+          var photoUrl=c.photo_url||c.avatar_url||'';
+          var qrUrl=c.qr_url||c.qr_code_url||'';
+          var hasPhoto=!!photoUrl;
+          var hasQr=!!qrUrl;
+          var ox=numOr(c.photo_offset_x,0);
+          var oy=numOr(c.photo_offset_y,0);
+          var sc=numOr(c.photo_scale,1);
+          return '<div class="contact-card compact-contact-card '+(c.id===selectedContact?'active':'')+'" data-contact-card-id="'+c.id+'">' +
+            '<div class="contact-main">' +
+              '<div class="contact-avatar">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>無照</span>')+'</div>' +
+              '<div class="contact-info"><h3>'+escapeHtml(c.name||'未命名')+' <span>'+escapeHtml(c.title||'')+'</span></h3>' +
+                '<p class="muted">'+escapeHtml(c.phone||'')+'<br>'+escapeHtml(getTeamName(c))+(c.address?'｜'+escapeHtml(c.address):'')+'</p>' +
+                '<div class="actions"><button class="btn line small" data-select-contact="'+c.id+'">前台預覽</button>'+(user?'<button class="btn danger small" data-delete-contact="'+c.id+'">刪除聯絡人</button>':'')+'</div>' +
+              '</div>' +
+            '</div>' +
+            '<details class="compact-assets">' +
+              '<summary>照片 / QR / 微調</summary>' +
+              '<div class="asset-panel fixed-asset-panel">' +
+                '<div class="asset-box"><div class="asset-title">形象照</div><div class="asset-preview">'+(hasPhoto?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>尚無形象照</span>')+'</div>' +
+                  (user?'<label class="mini-upload">上傳形象照<input data-photo-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasPhoto?'<button class="asset-delete" data-delete-photo="'+c.id+'" type="button">刪除形象照</button>':'<button class="asset-delete disabled" type="button" disabled>無形象照可刪</button>'):'') +
+                  (user?'<div class="photo-adjuster"><div class="asset-title">照片微調</div>' +
+                    '<label>左右 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_x" type="range" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_x" type="number" min="-90" max="90" step="1" value="'+escapeAttr(ox)+'"></span></label>' +
+                    '<label>上下 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(oy)+'"></span></label>' +
+                    '<label>縮放 <span class="adjust-control"><input data-photo-adjust="'+c.id+'" data-adjust-field="photo_scale" type="range" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"><input class="adjust-number" data-photo-adjust-number="'+c.id+'" data-adjust-field="photo_scale" type="number" min="0.6" max="2.2" step="0.01" value="'+escapeAttr(sc)+'"></span></label>' +
+                    '<button class="btn line small" data-reset-photo-adjust="'+c.id+'" type="button">重設照片位置</button></div>':'') +
+                '</div>' +
+                '<div class="asset-box"><div class="asset-title">QR Code</div><div class="asset-preview qr-preview">'+(hasQr?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>尚無 QR</span>')+'</div>' +
+                  (user?'<label class="mini-upload">上傳 QR Code<input data-qr-contact="'+c.id+'" type="file" accept="image/*"></label>'+(hasQr?'<button class="asset-delete" data-delete-qr="'+c.id+'" type="button">刪除 QR Code</button>':'<button class="asset-delete disabled" type="button" disabled>無 QR 可刪</button>'):'') +
+                  (user?'<div class="qr-adjuster"><div class="asset-title">QR 微調</div>' +
+                    '<label>左右 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_x" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_x" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_x,0))+'"></span></label>' +
+                    '<label>上下 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_offset_y" type="range" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_offset_y" type="number" min="-120" max="120" step="1" value="'+escapeAttr(numOr(c.qr_offset_y,0))+'"></span></label>' +
+                    '<label>縮放 <span class="adjust-control"><input data-qr-adjust="'+c.id+'" data-adjust-field="qr_scale" type="range" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"><input class="adjust-number" data-qr-adjust-number="'+c.id+'" data-adjust-field="qr_scale" type="number" min="0.5" max="2" step="0.01" value="'+escapeAttr(numOr(c.qr_scale,1))+'"></span></label>' +
+                    '<button class="btn line small" data-reset-qr-adjust="'+c.id+'" type="button">重設 QR 位置</button></div>':'') +
+                '</div>' +
+              '</div>' +
+            '</details>' +
+          '</div>';
+        }).join('')+'</div>';
+    }).join('');
+  }
 
   
   function brokerCards(){

@@ -1,3 +1,4 @@
+/* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
 /* JIFU_BROKER_IPHONE_FIX_20260603 */
 /* JIFU_LINE_TEAM_DMNAME_FIX_20260528 */
 /* JIFU_RESTORE_FEATURES_CLEAN_20260528 */
@@ -184,4 +185,137 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
 .mobile-download-fallback button + button{background:#e9eef2;color:#123a55;}
 @media(max-width:768px){
   .broker-card{grid-template-columns:1fr;}
+}
+
+
+/* JIFU_ADMIN_CONTACT_UX_FIX_20260603 */
+.admin-contact-toolbar{
+  display:grid;
+  grid-template-columns:220px minmax(260px,1fr) 160px;
+  gap:14px;
+  align-items:end;
+  margin-bottom:16px;
+  padding:14px;
+  border:1px solid #e4ddd3;
+  border-radius:16px;
+  background:#fbfaf7;
+}
+.admin-contact-toolbar .field{
+  margin-bottom:0;
+}
+.toolbar-actions .btn{
+  width:100%;
+}
+.compact-contact-list{
+  display:block;
+}
+.compact-team-group{
+  margin-top:14px;
+}
+.team-heading{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.team-count{
+  font-size:13px;
+  color:#6b665e;
+  background:#fff;
+  border:1px solid #d8d0c5;
+  border-radius:999px;
+  padding:3px 9px;
+}
+.compact-contact-card{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 260px !important;
+  gap:14px !important;
+  align-items:start;
+  padding:12px 14px !important;
+  margin-bottom:10px;
+}
+.contact-main{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  min-width:0;
+}
+.contact-avatar{
+  width:54px;
+  height:54px;
+  border-radius:12px;
+  border:1px solid #dfd8cc;
+  background:#fbfaf7;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 54px;
+  color:#8c8f91;
+  font-size:12px;
+  font-weight:900;
+}
+.contact-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.compact-contact-card .contact-info h3{
+  margin:0 0 4px;
+  font-size:17px;
+  line-height:1.35;
+}
+.compact-contact-card .contact-info p{
+  margin:0 0 8px;
+  line-height:1.45;
+  font-size:13px;
+}
+.compact-contact-card .actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.compact-assets{
+  border:1px solid #e4ddd3;
+  border-radius:14px;
+  padding:10px;
+  background:#fff;
+}
+.compact-assets summary{
+  cursor:pointer;
+  font-weight:900;
+  color:#123a55;
+  list-style:none;
+}
+.compact-assets summary::-webkit-details-marker{
+  display:none;
+}
+.compact-assets summary:after{
+  content:"展開";
+  float:right;
+  font-size:12px;
+  color:#17684f;
+}
+.compact-assets[open] summary:after{
+  content:"收合";
+}
+.compact-assets .asset-panel{
+  margin-top:10px;
+}
+.compact-assets .asset-preview{
+  min-height:70px;
+}
+.compact-assets .photo-adjuster,
+.compact-assets .qr-adjuster{
+  padding:8px;
+}
+.compact-assets .asset-title{
+  font-size:12px;
+}
+@media(max-width:900px){
+  .admin-contact-toolbar{
+    grid-template-columns:1fr;
+  }
+  .compact-contact-card{
+    grid-template-columns:1fr !important;
+  }
 }
