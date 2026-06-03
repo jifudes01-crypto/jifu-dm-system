@@ -128,7 +128,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     '</div>' +
     '<div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>姓名</label><input id="cName"></div><div class="field"><label>職稱</label><input id="cTitle"></div><div class="field"><label>電話</label><input id="cPhone"></div><div class="field"><label>公司 / 團隊</label><input id="cCompany"></div></div><div class="field"><label>地址</label><input id="cAddress"></div><button id="addContactBtn" class="btn primary">新增聯絡人</button></div>' +
     '<div class="compact-contact-list" style="margin-top:18px">'+contactCards()+'</div></section>' +
-    '<section class="card"><h2>不動產經紀人選單管理</h2><p class="muted">前台會依團隊篩選經紀人。可在這裡新增、修改、刪除經紀人選單內容；DM 右上方紅框位置的字體大小與上下位置也在這裡調整。</p><div class="broker-size-panel"><div class="field"><label>DM 上不動產經紀人字體大小</label><input id="brokerLineSize" type="number" min="12" max="32" step="1" value="'+escapeAttr(settings.brokerLineSize||18)+'"><small>建議 18px，約等於 10pt 視覺大小。數字越大，DM 上紅框位置文字越大。</small></div><div class="field"><label>DM 上不動產經紀人上下位置</label><input id="brokerLineY" type="number" min="260" max="390" step="1" value="'+escapeAttr(settings.brokerLineY||320)+'"><small>建議 320。數字越小越上面，數字越大越下面。</small></div><div class="field"><label>&nbsp;</label><button id="saveBrokerLineSizeBtn" class="btn primary" type="button">儲存字體與位置</button></div></div><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>團隊</label><input id="brokerTeam" placeholder="例如：祥億團隊"></div><div class="field"><label>經紀人姓名</label><input id="brokerName" placeholder="例如：王小明"></div><div class="field"><label>證號 / 備註</label><input id="brokerLicense" placeholder="例如：(112)新北經字第000000號"></div><div class="field"><label>&nbsp;</label><button id="addBrokerBtn" class="btn primary">新增經紀人</button></div></div></div><div class="broker-grid" style="margin-top:18px">'+brokerCards()+'</div></section>';
+    '<section class="card"><h2>不動產經紀人選單管理</h2><p class="muted">前台會依團隊篩選經紀人。可在這裡新增、修改、刪除經紀人選單內容；DM 右上方紅框位置的字體大小與上下位置也在這裡調整。</p><div class="broker-size-panel"><div class="field"><label>DM 上不動產經紀人字體大小</label><input id="brokerLineSize" type="number" min="12" max="32" step="1" value="'+escapeAttr(settings.brokerLineSize||18)+'"><small>建議 18px，約等於 10pt 視覺大小。數字越大，DM 上紅框位置文字越大。</small></div><div class="field broker-range-field"><label>DM 上不動產經紀人上下位置</label><div class="range-with-value"><input id="brokerLineY" type="range" min="260" max="390" step="1" value="'+escapeAttr(settings.brokerLineY||320)+'"><input id="brokerLineYNumber" type="number" min="260" max="390" step="1" value="'+escapeAttr(settings.brokerLineY||320)+'"><span>px</span></div><small>用拉軸直接調整上下位置；數字越小越上面，越大越下面。右側數字可手動輸入。</small></div><div class="field"><label>&nbsp;</label><button id="saveBrokerLineSizeBtn" class="btn primary" type="button">儲存字體與位置</button></div></div><div class="'+(!user?'hidden':'')+'"><div class="row4"><div class="field"><label>團隊</label><input id="brokerTeam" placeholder="例如：祥億團隊"></div><div class="field"><label>經紀人姓名</label><input id="brokerName" placeholder="例如：王小明"></div><div class="field"><label>證號 / 備註</label><input id="brokerLicense" placeholder="例如：(112)新北經字第000000號"></div><div class="field"><label>&nbsp;</label><button id="addBrokerBtn" class="btn primary">新增經紀人</button></div></div></div><div class="broker-grid" style="margin-top:18px">'+brokerCards()+'</div></section>';
   }
   function settingsHtml(){
     return '<section class="card"><h2>右上角聯絡資訊欄位設定</h2><p class="muted">所有設定都會存到雲端。這些欄位只控制右上角白色聯絡資訊框，不會影響物件格。</p><div class="row4"><div class="field"><label>姓名字級</label><input id="nameSize" type="number" value="'+settings.nameSize+'"></div><div class="field"><label>職稱字級</label><input id="titleSize" type="number" value="'+settings.titleSize+'"></div><div class="field"><label>電話字級</label><input id="phoneSize" type="number" value="'+settings.phoneSize+'"></div><div class="field"><label>公司/地址字級</label><input id="companySize" type="number" value="'+settings.companySize+'"></div></div><div class="row4"><div class="field"><label>姓名區行距</label><input id="nameGap" type="number" value="'+settings.nameGap+'"></div><div class="field"><label>下方資訊行距</label><input id="subGap" type="number" value="'+settings.subGap+'"></div><div class="field"><label>左右內距</label><input id="paddingX" type="number" value="'+settings.paddingX+'"></div><div class="field"><label>上下內距</label><input id="paddingY" type="number" value="'+settings.paddingY+'"></div></div><div class="row"><div class="field"><label>字型</label><select id="fontFamily"><option>Microsoft JhengHei</option><option>PMingLiU</option><option>MingLiU</option><option>DFKai-SB</option><option>Arial</option><option>Tahoma</option></select></div><div class="field"><label>文字粗細</label><select id="fontWeight"><option value="normal">一般</option><option value="600">SemiBold</option><option value="bold">粗體</option><option value="900">超粗</option></select></div></div><div class="row"><div class="field"><label>文字顏色</label><input id="fontColor" type="color" value="'+settings.color+'"></div><div class="field"><label>聯絡區背景</label><select id="bgEnabled"><option value="false">不要底色，使用公版白色框</option><option value="true">加半透明底色</option></select></div></div><button id="saveSettingsBtn" class="btn primary '+(!user?'hidden':'')+'">儲存設定到雲端</button><p class="admin-only-note '+(user?'hidden':'')+'">請先登入後台，才能儲存欄位設定。</p></section>';
@@ -159,7 +159,8 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
 
     if((el=document.getElementById('addBrokerBtn')))el.onclick=addBroker;
     if((el=document.getElementById('brokerLineSize'))){el.oninput=function(){previewBrokerLineStyle();};}
-    if((el=document.getElementById('brokerLineY'))){el.oninput=function(){previewBrokerLineStyle();};}
+    if((el=document.getElementById('brokerLineY'))){el.oninput=function(){syncBrokerLineY('slider');previewBrokerLineStyle();};}
+    if((el=document.getElementById('brokerLineYNumber'))){el.oninput=function(){syncBrokerLineY('number');previewBrokerLineStyle();};}
     if((el=document.getElementById('saveBrokerLineSizeBtn')))el.onclick=saveBrokerLineSize;
     if((el=document.getElementById('saveSettingsBtn')))el.onclick=saveSettings;
     document.querySelectorAll('[data-select-dm]').forEach(function(card){card.onclick=function(){selectedDm=card.dataset.selectDm;view='front';render();setTimeout(renderCanvas,50);};});
@@ -598,15 +599,27 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
   function val(id){var e=document.getElementById(id);return e?e.value.trim():'';}
   async function saveSettings(){settings=Object.assign({},settings,{nameSize:+val('nameSize')||34,titleSize:+val('titleSize')||24,phoneSize:+val('phoneSize')||26,companySize:+val('companySize')||18,nameGap:+val('nameGap')||8,subGap:+val('subGap')||8,paddingX:+val('paddingX')||18,paddingY:+val('paddingY')||8,fontFamily:val('fontFamily')||'Microsoft JhengHei',fontWeight:val('fontWeight')||'bold',color:val('fontColor')||'#000000',bgEnabled:val('bgEnabled')==='true',brokerLineSize:numOr(settings.brokerLineSize,18),brokerLineY:numOr(settings.brokerLineY,320)}); var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()}); if(res.error)return notice('設定儲存失敗：'+res.error.message); await addLog('更新欄位設定',''); notice('設定已儲存。'); renderCanvas();}
 
+  function syncBrokerLineY(source){
+    var slider=document.getElementById('brokerLineY');
+    var number=document.getElementById('brokerLineYNumber');
+    if(!slider || !number)return;
+    var v=source==='number'?number.value:slider.value;
+    v=Math.max(260,Math.min(390,numOr(v,320)));
+    slider.value=v;
+    number.value=v;
+  }
+
   function previewBrokerLineStyle(){
+    syncBrokerLineY('slider');
     settings.brokerLineSize=Math.max(12,Math.min(32,numOr(val('brokerLineSize'),18)));
-    settings.brokerLineY=Math.max(260,Math.min(390,numOr(val('brokerLineY'),320)));
+    settings.brokerLineY=Math.max(260,Math.min(390,numOr(val('brokerLineYNumber')||val('brokerLineY'),320)));
     renderCanvas();
   }
 
   async function saveBrokerLineSize(){
+    syncBrokerLineY('slider');
     settings.brokerLineSize=Math.max(12,Math.min(32,numOr(val('brokerLineSize'),18)));
-    settings.brokerLineY=Math.max(260,Math.min(390,numOr(val('brokerLineY'),320)));
+    settings.brokerLineY=Math.max(260,Math.min(390,numOr(val('brokerLineYNumber')||val('brokerLineY'),320)));
     var res=await sb.from('app_settings').upsert({key:'contact_box',value:settings,updated_at:new Date().toISOString()});
     if(res.error)return notice('不動產經紀人字體與位置儲存失敗：'+res.error.message);
     await addLog('更新經紀人字體與位置','size='+settings.brokerLineSize+', y='+settings.brokerLineY);
