@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>吉富 DM 圖片儲存</title>
+  <style>
+    html,body{margin:0;background:#f6f1e8;color:#123a55;font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei",Arial,sans-serif;}
+    .wrap{max-width:980px;margin:0 auto;padding:14px;}
+    .panel{background:#fff;border:1px solid #ded6c9;border-radius:18px;padding:14px;box-shadow:0 10px 26px rgba(0,0,0,.12);}
+    h1{font-size:20px;margin:0 0 8px;}
+    p{font-size:15px;line-height:1.6;margin:8px 0;font-weight:800;}
+    .hint{background:#fff6d8;border:1px solid #eadca7;border-radius:14px;padding:10px;margin:10px 0;color:#6d4d00;}
+    img{display:block;width:100%;height:auto;background:#fff;border:1px solid #e4ddd3;border-radius:12px;-webkit-touch-callout:default;user-select:auto;}
+    button,a.btn{display:block;box-sizing:border-box;width:100%;border:0;border-radius:12px;padding:13px 14px;margin:10px 0;background:#0b4d78;color:#fff;text-decoration:none;text-align:center;font-weight:900;font-size:16px;}
+    a.secondary{background:#e9eef2;color:#123a55;}
+    small{display:block;color:#617487;word-break:break-all;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h1>DM 圖片儲存頁</h1>
+      <div class="hint">請在下方圖片上長按，選擇「儲存圖片」或「加入照片」。LINE 內建瀏覽器請優先用這個方式。</div>
+      <small id="name"></small>
+      <img id="img" alt="DM 圖片，請長按儲存">
+      <a class="btn secondary" href="./">返回 DM 系統</a>
+    </div>
+  </div>
+  <script>
+    (function(){
+      function qs(name){return new URLSearchParams(location.search).get(name)||'';}
+      var key=qs('k');
+      var raw='';
+      try{raw=sessionStorage.getItem(key)||localStorage.getItem(key)||'';}catch(e){}
+      var img=document.getElementById('img');
+      var name=document.getElementById('name');
+      if(!raw){
+        document.querySelector('.hint').textContent='找不到圖片資料，請返回 DM 系統重新按一次下載圖片。';
+        return;
+      }
+      try{
+        var data=JSON.parse(raw);
+        img.src=data.src||'';
+        name.textContent=data.name||'jifu-dm.png';
+      }catch(e){
+        img.src=raw;
+      }
+    })();
+  </script>
+</body>
+</html>
