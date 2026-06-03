@@ -766,57 +766,110 @@ async function downloadCanvas(){
 
     var dm=dms.find(function(x){return x.id===selectedDm;});
     var c=contacts.find(function(x){return x.id===selectedContact;});
-    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-');
+    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-').replace(/\s+/g,'_');
 
     var dataUrl='';
     try{ dataUrl=canvas.toDataURL('image/png'); }catch(e){ dataUrl=''; }
-
-    var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
-    var isLine=/Line\//i.test(navigator.userAgent||'');
-    var isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
-
-    if(!isMobile && !isLine){
-      try{
-        canvas.toBlob(function(blob){
-          if(!blob){
-            var a0=document.createElement('a');
-            a0.href=dataUrl;
-            a0.download=fileName;
-            a0.click();
-            return;
-          }
-          var url=URL.createObjectURL(blob);
-          var a=document.createElement('a');
-          a.href=url;
-          a.download=fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(function(){URL.revokeObjectURL(url);},1500);
-          addLog('下載DM',fileName);
-        },'image/png',1);
-      }catch(err){
-        var a=document.createElement('a');
-        a.href=dataUrl;
-        a.download=fileName;
-        a.click();
-      }
+    if(!dataUrl){
+      notice('圖片產生失敗，可能是來源圖片權限阻擋。請重新上傳 DM 圖片後再下載。');
       return;
     }
 
-    // iPhone / LINE / 各種手機：永遠顯示可長按儲存的圖片預覽，避免 download 被阻擋。
+    var blob=null;
+    try{ blob=await canvasToPngBlob(canvas); }catch(e){ blob=null; }
+    if(!blob) blob=dataUrlToBlob(dataUrl);
+
+    var isMobile=isMobileBrowser();
+    var isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent||'') || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    var isLine=isLineBrowser();
+    var isInApp=/FBAN|FBAV|Instagram|MicroMessenger|CriOS|FxiOS|EdgiOS/i.test(navigator.userAgent||'') || isLine;
+
+    // Always prepare an on-page real <img>. This is the most reliable iPhone/LINE fallback:
+    // users can long-press the image and save/copy it even when download="..." is ignored.
     showMobileDownloadFallback(dataUrl,fileName);
 
-    // Android Chrome 有時仍可另開圖片；iOS/LINE 則以頁面內長按為主。
-    if(!isIOS && !isLine){
+    var downloaded=false;
+
+    // Desktop and Android browsers usually accept <a download> with a Blob URL.
+    if(blob && !isIOS && !isInApp){
+      downloaded=tryAnchorDownload(blob,fileName);
+    }
+
+    // iOS/Safari and many in-app browsers block direct downloads. Try Web Share with a PNG File first.
+    if(!downloaded && blob && navigator.share && navigator.canShare){
+      try{
+        var file=new File([blob],fileName,{type:'image/png'});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:fileName,text:'吉富 DM 圖片'});
+          downloaded=true;
+        }
+      }catch(e){ downloaded=false; }
+    }
+
+    // Non-iOS fallback: try opening the PNG in a new tab.
+    if(!downloaded && !isIOS){
       try{ window.open(dataUrl,'_blank'); }catch(e){}
+    }
+
+    if(isIOS || isInApp || !downloaded){
+      notice('已產生圖片。若沒有自動下載，請在下方圖片長按「加入照片 / 儲存圖片」，或按「另開圖片」。');
+    }else{
+      notice('圖片已產生下載；下方也保留長按儲存備用圖。');
     }
 
     await addLog('下載DM',fileName);
   }
 
-  function openImageForMobileSave(url){
-    showMobileDownloadFallback(url,'jifu-dm.png');
+  function canvasToPngBlob(canvas){
+    return new Promise(function(resolve){
+      if(!canvas || !canvas.toBlob) return resolve(null);
+      try{
+        canvas.toBlob(function(blob){resolve(blob||null);},'image/png',1);
+      }catch(e){resolve(null);}
+    });
+  }
+
+  function dataUrlToBlob(dataUrl){
+    try{
+      var parts=dataUrl.split(',');
+      var mime=(parts[0].match(/:(.*?);/)||[])[1]||'image/png';
+      var bin=atob(parts[1]||'');
+      var len=bin.length;
+      var arr=new Uint8Array(len);
+      for(var i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+      return new Blob([arr],{type:mime});
+    }catch(e){return null;}
+  }
+
+  function tryAnchorDownload(blob,fileName){
+    try{
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;
+      a.download=fileName;
+      a.rel='noopener';
+      a.style.display='none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);
+      return true;
+    }catch(e){return false;}
+  }
+
+  function openImageForMobileSave(url,fileName){
+    var w=null;
+    try{ w=window.open('','_blank'); }catch(e){ w=null; }
+    if(w && w.document){
+      try{
+        w.document.open();
+        w.document.write('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHtml(fileName||'DM圖片')+'</title><style>body{margin:0;background:#111;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei",Arial,sans-serif;text-align:center}p{padding:12px;margin:0;font-weight:700}img{display:block;width:100%;height:auto;-webkit-touch-callout:default;user-select:auto}</style></head><body><p>長按圖片即可儲存到手機照片</p><img src="'+url+'" alt="DM圖片"></body></html>');
+        w.document.close();
+        return;
+      }catch(e){}
+    }
+    showMobileDownloadFallback(url,fileName||'jifu-dm.png');
+    notice('瀏覽器阻擋另開圖片，請直接在下方圖片長按儲存。');
   }
 
   function showMobileDownloadFallback(url,fileName){
@@ -826,58 +879,37 @@ async function downloadCanvas(){
     var box=document.createElement('div');
     box.id='mobileDownloadFallback';
     box.className='mobile-download-fallback';
-    box.innerHTML='<p>手機若沒有自動下載，請在下方圖片上長按儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><img id="mobileDownloadPreviewImg" alt="DM圖片預覽"><button type="button" id="openMobileImageBtn">另開圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button>';
+    box.innerHTML='<div class="mobile-download-head"><div><strong>圖片已產生</strong><p>iPhone / LINE / FB / IG 若無法自動下載，請長按下方圖片，選「儲存圖片 / 加入照片」。</p><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div><button type="button" id="closeMobileImageBtn" aria-label="關閉">×</button></div><div class="mobile-download-actions"><button type="button" id="openMobileImageBtn">另開圖片，方便長按儲存</button><button type="button" id="copyMobileImageBtn">複製圖片</button></div><img id="mobileDownloadPreviewImg" alt="DM圖片預覽，請長按儲存" draggable="true">';
 
     document.body.appendChild(box);
 
     var preview=document.getElementById('mobileDownloadPreviewImg');
-    if(preview)preview.src=url;
+    if(preview){
+      preview.src=url;
+      preview.style.webkitTouchCallout='default';
+      preview.style.userSelect='auto';
+      preview.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
+    }
 
     var btn=document.getElementById('openMobileImageBtn');
-    if(btn){
-      btn.onclick=function(){ try{window.open(url,'_blank');}catch(e){} };
-    }
+    if(btn){ btn.onclick=function(){ openImageForMobileSave(url,fileName); }; }
 
-    var close=document.getElementById('closeMobileImageBtn');
-    if(close){
-      close.onclick=function(){ var b=document.getElementById('mobileDownloadFallback'); if(b)b.remove(); };
-    }
-  }
-
-  function openImageForMobileSave(url){
-    var win=window.open(url,'_blank');
-    if(!win){
-      showMobileDownloadFallback(url,'jifu-dm.png');
-      notice('手機瀏覽器阻擋開啟圖片，請按下方「開啟圖片」後長按儲存。');
-    }
-  }
-
-  function showMobileDownloadFallback(url,fileName){
-    var old=document.getElementById('mobileDownloadFallback');
-    if(old)old.remove();
-
-    var box=document.createElement('div');
-    box.id='mobileDownloadFallback';
-    box.className='mobile-download-fallback';
-    box.innerHTML='<p>手機若沒有自動下載，請點「開啟圖片」，再長按圖片儲存。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></p><button type="button" id="openMobileImageBtn">開啟圖片</button><button type="button" id="closeMobileImageBtn">關閉提示</button><img id="mobileDownloadPreviewImg" alt="DM圖片預覽">';
-
-    document.body.appendChild(box);
-
-    var preview=document.getElementById('mobileDownloadPreviewImg');
-    if(preview) preview.src=url;
-
-    var btn=document.getElementById('openMobileImageBtn');
-    if(btn){
-      btn.onclick=function(){ window.open(url,'_blank'); };
-    }
-
-    var close=document.getElementById('closeMobileImageBtn');
-    if(close){
-      close.onclick=function(){
-        var b=document.getElementById('mobileDownloadFallback');
-        if(b)b.remove();
+    var copy=document.getElementById('copyMobileImageBtn');
+    if(copy){
+      copy.onclick=async function(){
+        try{
+          if(!navigator.clipboard || !window.ClipboardItem) throw new Error('not supported');
+          var blob=dataUrlToBlob(url);
+          await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+          notice('已複製圖片；若要存到相簿，也可以長按下方圖片儲存。');
+        }catch(e){
+          notice('此瀏覽器不支援複製圖片，請改用長按圖片儲存。');
+        }
       };
     }
+
+    var close=document.getElementById('closeMobileImageBtn');
+    if(close){ close.onclick=function(){ var b=document.getElementById('mobileDownloadFallback'); if(b)b.remove(); }; }
   }
 
 

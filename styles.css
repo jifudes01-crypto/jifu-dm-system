@@ -328,3 +328,44 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
     grid-template-columns:1fr !important;
   }
 }
+
+/* JIFU_DOWNLOAD_IPHONE_LONGPRESS_FIX_20260603 */
+.mobile-download-fallback{
+  position:fixed!important;
+  left:10px!important;
+  right:10px!important;
+  top:10px!important;
+  bottom:10px!important;
+  z-index:999999!important;
+  background:#fff!important;
+  border:1px solid #d8d0c5!important;
+  border-radius:18px!important;
+  box-shadow:0 14px 40px rgba(0,0,0,.28)!important;
+  padding:12px!important;
+  color:#123a55!important;
+  overflow:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.mobile-download-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.mobile-download-head strong{display:block;font-size:18px;margin-bottom:4px;color:#073966;}
+.mobile-download-head p{margin:0 0 4px!important;font-size:14px!important;line-height:1.5!important;font-weight:800!important;}
+.mobile-download-head small{display:block;color:#666;font-size:12px;word-break:break-all;}
+.mobile-download-head #closeMobileImageBtn{width:42px!important;height:42px!important;min-width:42px!important;border-radius:999px!important;margin:0!important;padding:0!important;background:#e9eef2!important;color:#123a55!important;font-size:28px!important;line-height:1!important;}
+.mobile-download-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.mobile-download-actions button{width:100%!important;border:0!important;border-radius:12px!important;padding:12px 10px!important;background:#0b4d78!important;color:#fff!important;font-weight:900!important;font-size:15px!important;margin:0!important;}
+.mobile-download-actions button + button{background:#18785c!important;color:#fff!important;}
+.mobile-download-fallback img{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  margin:0 auto!important;
+  border-radius:12px!important;
+  border:1px solid #e4ddd3!important;
+  background:#fff!important;
+  -webkit-touch-callout:default!important;
+  -webkit-user-select:auto!important;
+  user-select:auto!important;
+  touch-action:auto!important;
+}
+@media(max-width:520px){.mobile-download-actions{grid-template-columns:1fr;}.mobile-download-head strong{font-size:17px;}}
