@@ -807,12 +807,16 @@ async function downloadCanvas(){
   }
 
   function forceSamePageImageSave(dataUrl,fileName){
+    // LINE / Notion 內建瀏覽器常會阻擋 window.open、download、blob 以及第二次點擊開頁。
+    // 所以手機與內建瀏覽器改成：按下載後立刻在同一頁顯示全螢幕圖片，使用者直接長按儲存。
     showMobileDownloadFallback(dataUrl,fileName);
     setTimeout(function(){
-      var box=document.getElementById('mobileDownloadFallback');
-      if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
-    },80);
-    notice('圖片已產生。LINE / Notion 內建瀏覽器請直接長按下方圖片儲存。');
+      try{ openInlineImageSavePage(dataUrl,fileName); }catch(e){
+        var box=document.getElementById('mobileDownloadFallback');
+        if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    },120);
+    notice('圖片已產生。請直接長按圖片儲存。');
   }
 
   function showMobileDownloadFallback(dataUrl,fileName){
@@ -859,7 +863,14 @@ async function downloadCanvas(){
 
     var pageBtn=document.getElementById('inlineSavePageBtn');
     if(pageBtn){
-      pageBtn.onclick=function(){ openInlineImageSavePage(dataUrl,fileName); };
+      var openHandler=function(ev){
+        if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+        openInlineImageSavePage(dataUrl,fileName);
+        return false;
+      };
+      pageBtn.onclick=openHandler;
+      pageBtn.addEventListener('touchend',openHandler,{passive:false});
+      pageBtn.addEventListener('click',openHandler,false);
     }
 
     var close=document.getElementById('closeMobileImageBtn');
@@ -886,7 +897,13 @@ async function downloadCanvas(){
     document.body.classList.add('inline-save-open');
 
     var img=document.getElementById('inlineImageSaveImg');
-    if(img){ img.src=dataUrl; }
+    if(img){
+      img.src=dataUrl;
+      img.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
+      img.addEventListener('touchstart',function(){ img.classList.add('is-touching'); },{passive:true});
+      img.addEventListener('touchend',function(){ img.classList.remove('is-touching'); },{passive:true});
+      setTimeout(function(){ try{ img.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} },80);
+    }
 
     var back=document.getElementById('backFromInlineSave');
     if(back){

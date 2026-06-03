@@ -464,3 +464,25 @@ select{min-height:44px;font-size:16px;pointer-events:auto!important;touch-action
   .inline-image-save-page{padding:10px;}
   .inline-image-save-toolbar{align-items:flex-start;}
 }
+
+
+/* Hard fix: LINE / Notion webview must save from same-page visible image, no popup required */
+.inline-image-save-page{
+  z-index:2147483647 !important;
+  pointer-events:auto !important;
+}
+.inline-image-save-page *{
+  pointer-events:auto !important;
+}
+#inlineImageSaveImg,
+#mobileDownloadPreviewImg{
+  -webkit-touch-callout:default !important;
+  -webkit-user-select:auto !important;
+  user-select:auto !important;
+  pointer-events:auto !important;
+  touch-action:auto !important;
+}
+#inlineImageSaveImg.is-touching,
+#mobileDownloadPreviewImg.is-touching{
+  outline:4px solid rgba(201,164,92,.45);
+}
