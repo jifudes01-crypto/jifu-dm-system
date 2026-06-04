@@ -99,6 +99,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   }
 
   function frontHtml(){
+    // Front stage broker is intentionally auto-bound by team; no broker dropdown is rendered here.
     ensureSelectedContactInTeam();
     ensureSelectedBrokerInTeam();
     var c=getSelectedContact?getSelectedContact():null;
@@ -109,12 +110,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>'+lineHint+
       '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
       '<div class="field"><label>選擇團隊</label><select id="teamSelect">'+teamOptions()+'</select><button id="teamPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇團隊</button></div>'+
-      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照與 QR Code 由後台管理。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
-      '<div class="field"><label>選擇不動產經紀人</label><select id="brokerSelect">'+brokerOptions()+'</select><small>依團隊自動篩選，可在後台新增與編輯。</small><button id="brokerPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇經紀人</button></div>'+
-      '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p><p class="mini-broker">經紀人：'+escapeHtml(broker?(broker.name||'未命名經紀人'):'尚未選擇')+(broker&&broker.license_no?'｜'+escapeHtml(broker.license_no):'')+'</p></div><div class="mini-assets">'+
+      '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照、QR Code 與經紀人由後台依團隊綁定。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
+      '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p><p class="mini-broker">經紀人：'+escapeHtml(broker?(broker.name||'未命名經紀人'):'依團隊自動套入')+(broker&&broker.license_no?'｜'+escapeHtml(broker.license_no):'')+'</p></div><div class="mini-assets">'+
       (photoUrl?'<img src="'+escapeAttr(photoUrl)+'" alt="形象照">':'<span>無形象照</span>')+
       (qrUrl?'<img src="'+escapeAttr(qrUrl)+'" alt="QR Code">':'<span>無 QR</span>')+
-      '</div></div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、團隊、業務與不動產經紀人，即可產生 DM。上傳與編輯請到後台管理。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
+      '</div></div><button id="renderBtn" class="btn primary full">更新預覽</button><button id="downloadBtn" class="btn gold full">下載 DM 圖片</button></section><section class="card"><h2>使用說明</h2><p class="muted">業務只要選擇 DM、團隊與業務，即可產生 DM；不動產經紀人會由後台依團隊自動套入。上傳與編輯請到後台管理。</p></section></aside><section><section class="card"><h2>即時預覽</h2><div class="canvas-wrap"><canvas id="dmCanvas" class="dm-canvas"></canvas></div></section><section class="card"><h2>可選 DM</h2><div class="dm-grid">'+dmCards(false)+'</div></section></section></div>';
   }
   function adminHtml(){
     return '<div class="grid admin"><aside><section class="card"><h2>後台登入</h2><p class="muted">'+(user?'已登入：'+escapeHtml(user.email):'尚未登入。前台可用，後台管理需登入。')+'</p><div class="field"><label>管理員 Email</label><input id="loginEmail" value="'+escapeAttr(user&&user.email||'')+'"></div><div class="field"><label>密碼</label><input id="loginPassword" type="password"></div><button id="loginBtn" class="btn primary full">登入後台</button><button id="logoutBtn" class="btn line full">登出</button></section><section class="card '+(!user?'hidden':'')+'"><h2>上傳已排版 DM</h2><div class="field"><label>DM 名稱</label><input id="dmUploadName" placeholder="例如：26年5月農地版第一期"></div><label class="upload">一次上傳多張 DM<input id="dmUpload" type="file" accept="image/*" multiple></label><div id="pendingInfo" class="muted">尚未選擇檔案</div><button id="uploadBtn" class="btn gold full">上傳並發布</button><div class="table-note">可先輸入 DM 名稱再上傳。若一次多張，系統會自動在後面加序號。</div></section></aside><section><section class="card"><h2>DM 管理</h2><div class="dm-grid">'+dmCards(true)+'</div></section></section></div>';
@@ -139,12 +139,10 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var el; document.body.classList.toggle('line-browser',isLineBrowser()); document.body.classList.toggle('mobile-browser',isMobileBrowser());
     if((el=document.getElementById('dmSelect'))){el.onchange=function(){selectedDm=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
     if((el=document.getElementById('teamSelect'))){el.onchange=function(){selectedTeam=this.value;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
-    if((el=document.getElementById('contactSelect'))){el.onchange=function(){selectedContact=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
-    if((el=document.getElementById('brokerSelect'))){el.onchange=function(){selectedBroker=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇經紀人',pickerItemsFromBrokers(),function(v){selectedBroker=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
+    if((el=document.getElementById('contactSelect'))){el.onchange=function(){selectedContact=this.value;ensureSelectedBrokerInTeam();render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
     if((el=document.getElementById('dmPickerBtn')))el.onclick=function(){openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});};
     if((el=document.getElementById('teamPickerBtn')))el.onclick=function(){openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});};
-    if((el=document.getElementById('contactPickerBtn')))el.onclick=function(){openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;render();setTimeout(renderCanvas,50);});};
-    if((el=document.getElementById('brokerPickerBtn')))el.onclick=function(){openPicker('選擇經紀人',pickerItemsFromBrokers(),function(v){selectedBroker=v;render();setTimeout(renderCanvas,50);});};
+    if((el=document.getElementById('contactPickerBtn')))el.onclick=function(){openPicker('選擇業務',pickerItemsFromContacts(),function(v){selectedContact=v;ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});};
     if((el=document.getElementById('renderBtn')))el.onclick=renderCanvas;
     if((el=document.getElementById('downloadBtn')))el.onclick=downloadCanvas;
     if((el=document.getElementById('loginBtn')))el.onclick=login;
@@ -236,8 +234,10 @@ function openPicker(title,items,onSelect){
 
   function filteredBrokers(){
     var list = brokers || [];
-    if(!selectedTeam) return list;
-    return list.filter(function(b){ return getTeamName(b) === selectedTeam; });
+    var contact = getSelectedContact ? getSelectedContact() : null;
+    var activeTeam = selectedTeam || (contact ? getTeamName(contact) : '');
+    if(!activeTeam) return list;
+    return list.filter(function(b){ return getTeamName(b) === activeTeam; });
   }
 
   function ensureSelectedBrokerInTeam(){
@@ -758,151 +758,140 @@ function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
   }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-var __jifuDownloadBusy=false;
+async function downloadCanvas(){
+    var canvas=document.getElementById('dmCanvas');
+    if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
 
-  async function downloadCanvas(evt){
-    if(evt && evt.preventDefault) evt.preventDefault();
-    if(__jifuDownloadBusy) return;
-    __jifuDownloadBusy=true;
-    try{
-      notice('正在產生圖片，請稍候...');
-      var canvas=document.getElementById('dmCanvas');
-      if(!canvas){ notice('找不到預覽圖，請先更新預覽。'); return; }
+    await renderCanvas();
 
-      await renderCanvas();
+    var dm=dms.find(function(x){return x.id===selectedDm;});
+    var c=contacts.find(function(x){return x.id===selectedContact;});
+    var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/]/g,'-');
 
-      var dm=dms.find(function(x){return x.id===selectedDm;});
-      var c=contacts.find(function(x){return x.id===selectedContact;});
-      var fileName=((dm&&dm.name||'DM')+'_'+(c&&c.name||'業務')+'.png').replace(/[\\/:*?"<>|]/g,'-');
+    var dataUrl='';
+    try{ dataUrl=canvas.toDataURL('image/png'); }catch(e){ dataUrl=''; }
+    if(!dataUrl)return notice('圖片產生失敗，請重新更新預覽後再試一次。');
 
-      var dataUrl='';
+    var ua=navigator.userAgent||'';
+    var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    var isLine=/Line\//i.test(ua);
+    var isIOS=/iPhone|iPad|iPod/i.test(ua);
+    var isInApp=/Line\//i.test(ua)||/FBAN|FBAV|Instagram|MicroMessenger|Notion/i.test(ua);
+
+    // 桌機優先使用真正下載；手機/LINE/Notion 內建瀏覽器一律使用同頁長按儲存，避免 popup、download、blob 被封鎖。
+    if(!isMobile && !isLine && !isInApp){
       try{
-        dataUrl=canvas.toDataURL('image/png');
-      }catch(e){
-        console.error('toDataURL failed', e);
-        notice('圖片產生失敗：圖片來源被瀏覽器阻擋，請重新整理後再試。');
-        return;
-      }
-      if(!dataUrl){ notice('圖片產生失敗，請重新更新預覽後再試一次。'); return; }
-
-      var ua=navigator.userAgent||'';
-      var isIOS=/iPhone|iPad|iPod/i.test(ua);
-      var isAndroid=/Android/i.test(ua);
-      var isLine=/Line\//i.test(ua);
-      var isInApp=/Line\//i.test(ua)||/FBAN|FBAV|Instagram|MicroMessenger|Notion/i.test(ua);
-
-      // Always show the same-page long-press backup first so every environment has a visible result.
-      // This avoids the "button did nothing" problem in LINE / Notion WebView.
-      showDownloadResultPanel(dataUrl,fileName,isIOS||isAndroid||isLine||isInApp);
-
-      // Desktop and Android Chrome can still receive a real file download.
-      // iPhone/LINE/Notion often blocks file-system downloads, so the visible image remains the reliable fallback.
-      if(!isIOS && !isLine && !/Notion/i.test(ua)){
-        tryDownloadPng(canvas,dataUrl,fileName);
-      }
-
-      await addLog('下載DM',fileName);
-      notice('圖片已產生。若沒有自動下載，請長按下方圖片儲存。');
-    }catch(err){
-      console.error(err);
-      notice('下載功能發生錯誤：'+(err&&err.message?err.message:err));
-    }finally{
-      setTimeout(function(){__jifuDownloadBusy=false;},600);
-    }
-  }
-
-  function tryDownloadPng(canvas,dataUrl,fileName){
-    try{
-      if(canvas.toBlob){
         canvas.toBlob(function(blob){
           if(blob){
             var url=URL.createObjectURL(blob);
-            triggerDownloadUrl(url,fileName,true);
+            var a=document.createElement('a');
+            a.href=url;
+            a.download=fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function(){URL.revokeObjectURL(url);},1500);
           }else{
-            triggerDownloadUrl(dataUrl,fileName,false);
+            forceSamePageImageSave(dataUrl,fileName);
           }
+          addLog('下載DM',fileName);
         },'image/png',1);
-      }else{
-        triggerDownloadUrl(dataUrl,fileName,false);
+      }catch(err){
+        forceSamePageImageSave(dataUrl,fileName);
       }
-    }catch(e){
-      console.warn('download fallback', e);
-      try{ triggerDownloadUrl(dataUrl,fileName,false); }catch(_e){}
+      return;
+    }
+
+    forceSamePageImageSave(dataUrl,fileName);
+    await addLog('下載DM',fileName);
+  }
+
+  function forceSamePageImageSave(dataUrl,fileName){
+    // LINE / Notion / iPhone WebView may block window.open, target=_blank,
+    // <a download>, data: links, and blob: links. Do not trigger any external
+    // navigation here. Put the PNG image directly in the current page and open
+    // the full-screen long-press panel immediately.
+    showMobileDownloadFallback(dataUrl,fileName);
+    openInlineImageSavePage(dataUrl,fileName);
+    setTimeout(function(){
+      var img=document.getElementById('inlineImageSaveImg') || document.getElementById('mobileDownloadPreviewImg');
+      if(img)img.scrollIntoView({behavior:'smooth',block:'center'});
+    },120);
+    notice('圖片已產生，請直接長按圖片儲存。');
+  }
+
+  function showMobileDownloadFallback(dataUrl,fileName){
+    var old=document.getElementById('mobileDownloadFallback');
+    if(old)old.remove();
+
+    var box=document.createElement('div');
+    box.id='mobileDownloadFallback';
+    box.className='mobile-download-fallback';
+    box.innerHTML=''
+      +'<div class="mobile-save-head">'
+      +  '<div><strong>圖片已產生</strong><p>為避免 LINE / Notion / iPhone 阻擋下載，系統已直接在本頁顯示圖片。請長按圖片，選擇「儲存圖片」或「加入照片」。</p><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div>'
+      +  '<button type="button" id="closeMobileImageBtn" aria-label="關閉">×</button>'
+      +'</div>'
+      +'<div class="mobile-save-note">不使用開新分頁、不使用外部 App、不使用 data/blob 下載連結。</div>'
+      +'<img id="mobileDownloadPreviewImg" alt="DM圖片預覽，請長按儲存">';
+
+    var canvasWrap=document.querySelector('.canvas-wrap');
+    if(canvasWrap && canvasWrap.parentNode){
+      canvasWrap.parentNode.insertBefore(box,canvasWrap.nextSibling);
+    }else{
+      document.body.appendChild(box);
+    }
+
+    var preview=document.getElementById('mobileDownloadPreviewImg');
+    if(preview){
+      preview.src=dataUrl;
+      preview.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
+      preview.addEventListener('touchstart',function(){ preview.classList.add('is-touching'); },{passive:true});
+      preview.addEventListener('touchend',function(){ preview.classList.remove('is-touching'); },{passive:true});
+    }
+
+    var close=document.getElementById('closeMobileImageBtn');
+    if(close){
+      close.onclick=function(){ var b=document.getElementById('mobileDownloadFallback'); if(b)b.remove(); };
     }
   }
 
-  function triggerDownloadUrl(url,fileName,revoke){
-    var a=document.createElement('a');
-    a.href=url;
-    a.download=fileName||'jifu-dm.png';
-    a.rel='noopener';
-    a.style.position='fixed';
-    a.style.left='-9999px';
-    a.style.top='-9999px';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){
-      try{ document.body.removeChild(a); }catch(e){}
-      if(revoke){ try{ URL.revokeObjectURL(url); }catch(e){} }
-    },1200);
-  }
-
-  function showDownloadResultPanel(dataUrl,fileName,isMobileLike){
-    var old=document.getElementById('jifuDownloadResultPanel');
+  function openInlineImageSavePage(dataUrl,fileName){
+    var old=document.getElementById('inlineImageSavePage');
     if(old)old.remove();
 
-    var panel=document.createElement('div');
-    panel.id='jifuDownloadResultPanel';
-    panel.className='jifu-download-result-panel';
-    panel.innerHTML=''
-      +'<div class="jifu-download-result-card">'
-      +  '<div class="jifu-download-result-head">'
-      +    '<div><strong>DM 圖片已產生</strong><span>'+(isMobileLike?'請長按圖片儲存至手機相簿':'已嘗試自動下載，也可長按或右鍵另存圖片')+'</span></div>'
-      +    '<button type="button" id="jifuDownloadCloseBtn" aria-label="關閉">×</button>'
-      +  '</div>'
-      +  '<img id="jifuDownloadResultImg" alt="DM圖片，請長按儲存">'
-      +  '<div class="jifu-download-result-actions">'
-      +    '<button type="button" id="jifuDownloadAgainBtn">再按一次下載</button>'
-      +    '<button type="button" id="jifuDownloadDoneBtn">關閉</button>'
-      +  '</div>'
-      +'</div>';
-    document.body.appendChild(panel);
-    document.body.classList.add('jifu-download-open');
+    var page=document.createElement('div');
+    page.id='inlineImageSavePage';
+    page.className='inline-image-save-page';
+    page.innerHTML=''
+      +'<div class="inline-image-save-toolbar">'
+      +  '<button type="button" id="backFromInlineSave">返回編輯</button>'
+      +  '<div><strong>長按圖片儲存</strong><span>已在同一頁顯示圖片，不會開啟外部應用程式。</span></div>'
+      +'</div>'
+      +'<div class="inline-image-save-instruction">請長按下方圖片，選擇「儲存圖片」或「加入照片」。<br><small>'+escapeHtml(fileName||'jifu-dm.png')+'</small></div>'
+      +'<img id="inlineImageSaveImg" alt="DM圖片，請長按儲存">';
+    document.body.appendChild(page);
+    document.body.classList.add('inline-save-open');
 
-    var img=document.getElementById('jifuDownloadResultImg');
+    var img=document.getElementById('inlineImageSaveImg');
     if(img){
       img.src=dataUrl;
       img.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
       img.addEventListener('touchstart',function(){ img.classList.add('is-touching'); },{passive:true});
       img.addEventListener('touchend',function(){ img.classList.remove('is-touching'); },{passive:true});
     }
-    var close=function(){
-      var p=document.getElementById('jifuDownloadResultPanel');
-      if(p)p.remove();
-      document.body.classList.remove('jifu-download-open');
-    };
-    var closeBtn=document.getElementById('jifuDownloadCloseBtn');
-    var doneBtn=document.getElementById('jifuDownloadDoneBtn');
-    if(closeBtn)closeBtn.onclick=close;
-    if(doneBtn)doneBtn.onclick=close;
-    var again=document.getElementById('jifuDownloadAgainBtn');
-    if(again){
-      again.onclick=function(){ triggerDownloadUrl(dataUrl,fileName||'jifu-dm.png',false); };
-    }
-    setTimeout(function(){
-      try{ panel.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){}
-    },80);
-  }
 
-  // Backup click binding. Some mobile WebViews lose direct onclick bindings after re-rendering.
-  document.addEventListener('click',function(e){
-    var t=e.target;
-    if(t && t.closest) t=t.closest('#downloadBtn');
-    if(t && t.id==='downloadBtn'){
-      e.preventDefault();
-      downloadCanvas(e);
+    var back=document.getElementById('backFromInlineSave');
+    if(back){
+      back.onclick=function(){
+        var p=document.getElementById('inlineImageSavePage');
+        if(p)p.remove();
+        document.body.classList.remove('inline-save-open');
+        var box=document.getElementById('mobileDownloadFallback');
+        if(box)box.scrollIntoView({behavior:'smooth',block:'start'});
+      };
     }
-  },true);
+  }
 
 
 
