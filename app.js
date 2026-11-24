@@ -47,7 +47,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
       dms=release.dms; contacts=release.contacts; brokers=release.brokers;
       selectedDm=dms[0].id;
       renderShell();
-      document.querySelector('.tabs').innerHTML='<a class="tab" href="./admin.html">後台管理</a>';
+      document.querySelector('.tabs').remove();
       render(); renderCanvas(); notice('2026 年 11 月精選物件');
       return;
     }
@@ -663,12 +663,12 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     fitText(ctx,c.phone||'',phoneX,phoneY,250,38);
 
     ctx.font=weight+' 34px "'+family+'", Arial';
-    fitText(ctx,c.company||'吉富工商',companyX,companyY,250,38);
+    fitText(ctx,c.team||c.company||'吉富工商',companyX,companyY,250,38);
 
     var photo=await loadImage(c.photo_url||c.avatar_url||'');
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    var qrBaseX=1218, qrBaseY=122, qrBaseSize=64;
+    var qrBaseX=1186, qrBaseY=136, qrBaseSize=104;
     var qOffsetX=numOr(c.qr_offset_x,0);
     var qOffsetY=numOr(c.qr_offset_y,0);
     var qScale=Math.max(0.5,Math.min(2.0,numOr(c.qr_scale,1)));
@@ -676,7 +676,7 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     var qrX=qrBaseX+qOffsetX;
     var qrY=qrBaseY+qOffsetY;
 
-    var photoX=1356, photoY=58, photoW=74, photoH=210;
+    var photoX=1291, photoY=74, photoW=130, photoH=174;
     var pOffsetX=numOr(c.photo_offset_x,0);
     var pOffsetY=numOr(c.photo_offset_y,0);
     var pScale=Math.max(0.6,Math.min(2.2,numOr(c.photo_scale,1)));
@@ -715,14 +715,40 @@ function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
     var ih=img.naturalHeight||img.height;
     if(!iw||!ih)return;
 
-    var baseScale=Math.min(w/iw,h/ih);
+    var crop=portraitBounds(img,iw,ih);
+    var baseScale=Math.min(w/crop.w,h/crop.h);
     var scale=baseScale*(scaleAdjust||1);
-    var dw=iw*scale;
-    var dh=ih*scale;
+    var dw=crop.w*scale;
+    var dh=crop.h*scale;
     var dx=x+(w-dw)/2+Number(offsetX||0);
     var dy=y+(h-dh)/2+Number(offsetY||0);
 
-    ctx.drawImage(img,dx,dy,dw,dh);
+    ctx.drawImage(img,crop.x,crop.y,crop.w,crop.h,dx,dy,dw,dh);
+  }
+
+  function portraitBounds(img,width,height){
+    var full={x:0,y:0,w:width,h:height};
+    var ratio=Math.min(1,400/Math.max(width,height));
+    var sample=document.createElement('canvas');
+    sample.width=Math.max(1,Math.round(width*ratio));
+    sample.height=Math.max(1,Math.round(height*ratio));
+    var boundary=sample.getContext('2d',{willReadFrequently:true});
+    if(!boundary)return full;
+    try{
+      boundary.drawImage(img,0,0,sample.width,sample.height);
+      var data=boundary.getImageData(0,0,sample.width,sample.height).data;
+      var left=sample.width,top=sample.height,right=-1,bottom=-1;
+      for(var row=0;row<sample.height;row++)for(var col=0;col<sample.width;col++){
+        if(data[(row*sample.width+col)*4+3]<16)continue;
+        left=Math.min(left,col);right=Math.max(right,col);
+        top=Math.min(top,row);bottom=Math.max(bottom,row);
+      }
+      if(right<left)return full;
+      var sx=width/sample.width,sy=height/sample.height;
+      var x=Math.max(0,Math.floor((left-1)*sx)),y=Math.max(0,Math.floor((top-1)*sy));
+      var r=Math.min(width,Math.ceil((right+2)*sx)),b=Math.min(height,Math.ceil((bottom+2)*sy));
+      return {x:x,y:y,w:r-x,h:b-y};
+    }catch(_){return full;}
   }
 
 function fitText(ctx,text,x,y,maxW,maxH){text=String(text||''); if(!text)return; var original=ctx.font; var size=parseInt((ctx.font.match(/(\d+)px/)||[])[1]||20,10); while(ctx.measureText(text).width>maxW && size>10){size--;ctx.font=ctx.font.replace(/\d+px/,size+'px');} ctx.textAlign='left';ctx.fillText(text,x,y);ctx.font=original;}
