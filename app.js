@@ -42,6 +42,15 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   window.addEventListener('unhandledrejection',function(e){console.error(e.reason); notice('發生錯誤：'+((e.reason&&e.reason.message)||e.reason||'未知錯誤'));});
 
   function init(){
+    if(window.JIFU_NOVEMBER){
+      var release=window.JIFU_NOVEMBER;
+      dms=release.dms; contacts=release.contacts; brokers=release.brokers;
+      selectedDm=dms[0].id;
+      renderShell();
+      document.querySelector('.tabs').innerHTML='<a class="tab" href="./admin.html">後台管理</a>';
+      render(); renderCanvas(); notice('2026 年 11 月精選物件');
+      return;
+    }
     if(!cfg.url || !cfg.anonKey || !window.supabase){
       app.innerHTML='<div class="fatal-panel"><h2>Supabase 尚未設定完成</h2><p>請檢查 config.js 是否有 url 與 anonKey，且金鑰必須在同一行。</p></div>';
       return;
@@ -874,6 +883,9 @@ async function downloadCanvas(){
     document.body.classList.add('inline-save-open');
 
     var img=document.getElementById('inlineImageSaveImg');
+    var save=document.createElement('a');
+    save.className='btn gold';save.textContent='下載 PNG';save.download=fileName;save.href=dataUrl;
+    page.querySelector('.inline-image-save-toolbar').appendChild(save);
     if(img){
       img.src=dataUrl;
       img.addEventListener('contextmenu',function(e){ e.stopPropagation(); },false);
