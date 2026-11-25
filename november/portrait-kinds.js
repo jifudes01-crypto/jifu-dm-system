@@ -1,0 +1,1 @@
+window.JIFU_PORTRAIT_KINDS={"5f9ba513c11e34b905bc9de1f667dcde4dab47eb26c46b625fd3fa7eb21f7909": "full"};

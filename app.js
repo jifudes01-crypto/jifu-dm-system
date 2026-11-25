@@ -649,15 +649,7 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     var nameX=930, phoneX=930, companyX=930;
     var nameY=126, phoneY=182, companyY=238;
 
-    var nameText=c.name||'';
-    var titleText=c.title||'';
-
-    ctx.font=weight+' 34px "'+family+'", Arial';
-    fitText(ctx,nameText,nameX,nameY,130,38);
-
-    var titleX=nameX+Math.min(ctx.measureText(nameText).width,130)+26;
-    ctx.font=weight+' 30px "'+family+'", Arial';
-    fitText(ctx,titleText,titleX,nameY,120,34);
+    drawContactName(ctx,c.name||'',c.title||'',nameX,nameY,family,weight);
 
     ctx.font=weight+' 34px "'+family+'", Arial';
     fitText(ctx,c.phone||'',phoneX,phoneY,250,38);
@@ -668,15 +660,12 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     var photo=await loadImage(c.photo_url||c.avatar_url||'');
     var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
-    var qrBaseX=1186, qrBaseY=136, qrBaseSize=104;
-    var qOffsetX=numOr(c.qr_offset_x,0);
-    var qOffsetY=numOr(c.qr_offset_y,0);
-    var qScale=Math.max(0.5,Math.min(2.0,numOr(c.qr_scale,1)));
-    var qrSize=qrBaseSize*qScale;
-    var qrX=qrBaseX+qOffsetX;
-    var qrY=qrBaseY+qOffsetY;
+    var qrLeft=1180, qrRight=1290, imageGap=22;
+    var qrSize=Math.max(52,Math.min(qrRight-qrLeft,104*numOr(c.qr_scale,1)));
+    var qrX=Math.max(qrLeft,Math.min(qrRight-qrSize,1186+numOr(c.qr_offset_x,0)));
+    var qrY=Math.max(74,Math.min(248-qrSize,136+numOr(c.qr_offset_y,0)));
 
-    var photoX=1291, photoY=74, photoW=130, photoH=174;
+    var photoX=qrRight+imageGap, photoY=74, photoW=1421-photoX, photoH=174;
     var pOffsetX=numOr(c.photo_offset_x,0);
     var pOffsetY=numOr(c.photo_offset_y,0);
     var pScale=Math.max(0.6,Math.min(2.2,numOr(c.photo_scale,1)));
@@ -690,6 +679,37 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     }
 
     drawBrokerLine(ctx);
+  }
+
+  function drawContactName(ctx,name,title,x,y,family,weight){
+    var nameFont=weight+' 34px "'+family+'", Arial';
+    var titleFont=weight+' 30px "'+family+'", Arial';
+    var max=246;
+    function widths(value){
+      ctx.font=nameFont;
+      var nameWidth=ctx.measureText(value).width;
+      ctx.font=titleFont;
+      return {name:nameWidth,title:ctx.measureText(title).width};
+    }
+    var first=name, second='', m=widths(name);
+    if(m.name+(title?m.title+20:0)>max){
+      var alias=/^(.+?)\s*([（(].+[）)])$/.exec(name);
+      if(alias && alias[1]){
+        first=alias[1];second=alias[2];m=widths(first);
+      }
+    }
+    ctx.font=nameFont;
+    fitText(ctx,first,x,y,max);
+    if(title && m.name+20+m.title<=max){
+      ctx.font=titleFont;
+      fitText(ctx,title,x+m.name+20,y,max-m.name-20);
+    }else if(title){
+      second+=(second?'　':'')+title;
+    }
+    if(second){
+      ctx.font=weight+' 24px "'+family+'", Arial';
+      fitText(ctx,second,x,y+26,max);
+    }
   }
 
   function drawBrokerLine(ctx){
@@ -715,18 +735,29 @@ function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
     var ih=img.naturalHeight||img.height;
     if(!iw||!ih)return;
 
-    var crop=portraitBounds(img,iw,ih);
+    var hash=/\/november\/([a-f0-9]{64})\./.exec(img.src||'');
+    var kind=hash&&(window.JIFU_PORTRAIT_KINDS||{})[hash[1]];
+    var crop=portraitBounds(img,iw,ih,kind);
     var baseScale=Math.min(w/crop.w,h/crop.h);
-    var scale=baseScale*(scaleAdjust||1);
+    var scale=baseScale*(kind==='full'?(scaleAdjust||1):Math.min(1,scaleAdjust||1));
     var dw=crop.w*scale;
     var dh=crop.h*scale;
     var dx=x+(w-dw)/2+Number(offsetX||0);
     var dy=y+(h-dh)/2+Number(offsetY||0);
+    if(kind!=='full'){
+      dx=Math.max(x,Math.min(x+w-dw,dx));
+      dy=Math.max(y,Math.min(y+h-dh,dy));
+    }
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x,y,w,h);
+    ctx.clip();
     ctx.drawImage(img,crop.x,crop.y,crop.w,crop.h,dx,dy,dw,dh);
+    ctx.restore();
   }
 
-  function portraitBounds(img,width,height){
+  function portraitBounds(img,width,height,kind){
     var full={x:0,y:0,w:width,h:height};
     var ratio=Math.min(1,400/Math.max(width,height));
     var sample=document.createElement('canvas');
@@ -744,6 +775,15 @@ function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
         top=Math.min(top,row);bottom=Math.max(bottom,row);
       }
       if(right<left)return full;
+      if(kind==='full'){
+        bottom=top+Math.floor((bottom-top)*0.57);
+        left=sample.width;right=-1;
+        for(var cy=top;cy<=bottom;cy++)for(var cx=0;cx<sample.width;cx++){
+          if(data[(cy*sample.width+cx)*4+3]<16)continue;
+          left=Math.min(left,cx);right=Math.max(right,cx);
+        }
+        if(right<left)return full;
+      }
       var sx=width/sample.width,sy=height/sample.height;
       var x=Math.max(0,Math.floor((left-1)*sx)),y=Math.max(0,Math.floor((top-1)*sy));
       var r=Math.min(width,Math.ceil((right+2)*sx)),b=Math.min(height,Math.ceil((bottom+2)*sy));
