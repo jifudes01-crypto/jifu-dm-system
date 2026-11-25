@@ -46,7 +46,6 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(window.JIFU_NOVEMBER){
       var release=window.JIFU_NOVEMBER;
       dms=release.dms; contacts=release.contacts; brokers=release.brokers;
-      selectedMonth=dmMonths()[0]||'';
       selectedDm=dms[0].id;
       renderShell();
       document.querySelector('.tabs').remove();
@@ -119,7 +118,7 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var qrUrl=c?(c.qr_url||c.qr_code_url||''):'';
     var lineHint=isLineBrowser()?'<div class="line-hint">LINE 內建瀏覽器請使用下方「手機備用選單」。</div>':'';
     return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>'+lineHint+
-      (dmMonths().length?'<div class="field"><label for="monthSelect">選擇月份</label><select id="monthSelect">'+dmMonths().map(function(m){return '<option value="'+m+'" '+(m===selectedMonth?'selected':'')+'>'+monthLabel(m)+'</option>';}).join('')+'</select><button id="monthPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇月份</button></div>':'')+
+      (dmMonths().length?'<div class="field"><label for="monthSelect">選擇月份</label><select id="monthSelect"><option value="">全部月份</option>'+dmMonths().map(function(m){return '<option value="'+m+'" '+(m===selectedMonth?'selected':'')+'>'+monthLabel(m)+'</option>';}).join('')+'</select><button id="monthPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇月份</button></div>':'')+
       '<div class="field"><label for="dmSelect">選擇 DM</label><select id="dmSelect">'+dmOptions()+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
       '<div class="field"><label>選擇團隊</label><select id="teamSelect">'+teamOptions()+'</select><button id="teamPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇團隊</button></div>'+
       '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照、QR Code 與經紀人由後台依團隊綁定。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
@@ -250,12 +249,13 @@ function openPicker(title,items,onSelect){
   function monthLabel(m){return m.slice(0,4)+' 年 '+Number(m.slice(5))+' 月';}
   function monthDms(){return selectedMonth?dms.filter(function(d){return d.category===selectedMonth;}):dms;}
   function selectMonth(m){
-    if(!dmMonths().includes(m))return;
+    if(m!==''&&!dmMonths().includes(m))return;
     selectedMonth=m;
-    selectedDm=monthDms()[0]?.id||'';
+    var items=monthDms();
+    if(!items.some(function(dm){return dm.id===selectedDm;}))selectedDm=items[0]?.id||'';
     render();renderCanvas();
   }
-  function openMonthPicker(){openPicker('選擇月份',dmMonths().map(function(m){return {value:m,label:monthLabel(m)};}),selectMonth);}
+  function openMonthPicker(){openPicker('選擇月份',[{value:'',label:'全部月份'}].concat(dmMonths().map(function(m){return {value:m,label:monthLabel(m)};})),selectMonth);}
   function dmOptions(){
     var list=monthDms();
     if(!selectedMonth)return options(list,selectedDm,'name','請選擇 DM');
