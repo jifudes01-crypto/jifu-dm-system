@@ -707,7 +707,7 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
       drawPortraitFreeScale(ctx,photo,photoX,photoY,photoW,photoH,pOffsetX,pOffsetY,pScale);
     }
 
-    drawBrokerLine(ctx);
+    drawBrokerLine(ctx,c);
   }
 
   function drawContactName(ctx,name,title,x,y,family,weight){
@@ -741,8 +741,8 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     }
   }
 
-  function drawBrokerLine(ctx){
-    var broker=getSelectedBroker ? getSelectedBroker() : null;
+  function drawBrokerLine(ctx,contact){
+    var broker=(brokers||[]).find(function(record){return getTeamName(record)===getTeamName(contact);});
     if(!broker)return;
     var family=settings.fontFamily||'Microsoft JhengHei';
     var size=Math.max(12,Math.min(32,numOr(settings.brokerLineSize,18)));
@@ -753,7 +753,7 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
     ctx.textAlign='right';
     ctx.textBaseline='alphabetic';
     ctx.font='600 '+size+'px "'+family+'", Arial';
-    var y=Math.max(260,Math.min(390,numOr(settings.brokerLineY,320)));
+    var y=window.JIFU_NOVEMBER?290:Math.max(260,Math.min(390,numOr(settings.brokerLineY,320)));
     fitTextRight(ctx,text,1428,y,560,size+8,12);
     ctx.restore();
   }
