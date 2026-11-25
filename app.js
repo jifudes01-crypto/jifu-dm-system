@@ -667,9 +667,30 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
 
   function readFile(file){return new Promise(function(resolve,reject){if(!file)return resolve('');var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=reject;r.readAsDataURL(file);});}
   function loadImage(src){return new Promise(function(resolve){if(!src)return resolve(null);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){resolve(img);};img.onerror=function(){resolve(null);};img.src=src;});}
-  async function renderCanvas(){var canvas=document.getElementById('dmCanvas'); if(!canvas)return; var ctx=canvas.getContext('2d'); canvas.width=W; canvas.height=H; ctx.fillStyle='#f4f1eb';ctx.fillRect(0,0,W,H); var dm=dms.find(function(x){return x.id===selectedDm;}); if(dm){var img=await loadImage(dm.image_url); if(img)ctx.drawImage(img,0,0,W,H);} else {ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);} await drawContact(ctx);}
-  async function drawContact(ctx){
+  var canvasRenderId=0;
+  async function renderCanvas(){
+    var canvas=document.getElementById('dmCanvas');
+    if(!canvas)return false;
+    var renderId=++canvasRenderId;
+    var dm=dms.find(function(x){return x.id===selectedDm;});
     var c=getSelectedContact()||{};
+    var images=await Promise.all([
+      loadImage(dm&&dm.image_url),
+      loadImage(c.photo_url||c.avatar_url),
+      loadImage(c.qr_url||c.qr_code_url)
+    ]);
+    if(renderId!==canvasRenderId||document.getElementById('dmCanvas')!==canvas)return false;
+    canvas.width=W;
+    canvas.height=H;
+    var ctx=canvas.getContext('2d');
+    ctx.fillStyle='#f4f1eb';
+    ctx.fillRect(0,0,W,H);
+    if(images[0])ctx.drawImage(images[0],0,0,W,H);
+    if(!dm){ctx.fillStyle='#666';ctx.font='36px Arial';ctx.fillText('請先選擇 DM',570,930);}
+    drawContact(ctx,c,images[1],images[2]);
+    return true;
+  }
+  function drawContact(ctx,c,photo,qr){
     var family=settings.fontFamily||'Microsoft JhengHei';
     var weight='900';
     ctx.fillStyle=settings.color||'#000';
@@ -685,9 +706,6 @@ async function login(){var email=document.getElementById('loginEmail').value.tri
 
     ctx.font=weight+' 34px "'+family+'", Arial';
     fitText(ctx,c.team||c.company||'吉富工商',companyX,companyY,250,38);
-
-    var photo=await loadImage(c.photo_url||c.avatar_url||'');
-    var qr=await loadImage(c.qr_url||c.qr_code_url||'');
 
     var qrLeft=1180, qrRight=1290, imageGap=22;
     var qrSize=Math.max(52,Math.min(qrRight-qrLeft,104*numOr(c.qr_scale,1)));
@@ -772,7 +790,7 @@ function drawPortraitFreeScale(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
     var dw=crop.w*scale;
     var dh=crop.h*scale;
     var dx=x+(w-dw)/2+Number(offsetX||0);
-    var dy=y+(h-dh)/2+Number(offsetY||0);
+    var dy=y+h-dh+Number(offsetY||0);
     if(kind!=='full'){
       dx=Math.max(x,Math.min(x+w-dw,dx));
       dy=Math.max(y,Math.min(y+h-dh,dy));
@@ -866,7 +884,7 @@ async function downloadCanvas(){
     var canvas=document.getElementById('dmCanvas');
     if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
 
-    await renderCanvas();
+    if(!await renderCanvas())return;
 
     var dm=dms.find(function(x){return x.id===selectedDm;});
     var c=contacts.find(function(x){return x.id===selectedContact;});
