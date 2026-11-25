@@ -21,6 +21,7 @@
   var sb=null,user=null,view='front';
   var dms=[],contacts=[],brokers=[],logs=[];
   var selectedDm='', selectedContact='', selectedTeam='', selectedBroker='';
+  var selectedMonth='';
   var adminContactTeamFilter='', adminContactKeyword='';
   var assets={photo:'',qr:''};
   var settings=defaultSettings();
@@ -45,10 +46,11 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     if(window.JIFU_NOVEMBER){
       var release=window.JIFU_NOVEMBER;
       dms=release.dms; contacts=release.contacts; brokers=release.brokers;
+      selectedMonth=dmMonths()[0]||'';
       selectedDm=dms[0].id;
       renderShell();
       document.querySelector('.tabs').remove();
-      render(); renderCanvas(); notice('2026 年 11 月精選物件');
+      render(); renderCanvas(); notice('2026 年歷月精選物件');
       return;
     }
     if(!cfg.url || !cfg.anonKey || !window.supabase){
@@ -117,7 +119,8 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
     var qrUrl=c?(c.qr_url||c.qr_code_url||''):'';
     var lineHint=isLineBrowser()?'<div class="line-hint">LINE 內建瀏覽器請使用下方「手機備用選單」。</div>':'';
     return '<div class="grid"><aside><section class="card"><h2>前台下載</h2>'+lineHint+
-      '<div class="field"><label>選擇 DM</label><select id="dmSelect">'+options(dms,selectedDm,'name','請選擇 DM')+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
+      (dmMonths().length?'<div class="field"><label for="monthSelect">選擇月份</label><select id="monthSelect">'+dmMonths().map(function(m){return '<option value="'+m+'" '+(m===selectedMonth?'selected':'')+'>'+monthLabel(m)+'</option>';}).join('')+'</select><button id="monthPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇月份</button></div>':'')+
+      '<div class="field"><label for="dmSelect">選擇 DM</label><select id="dmSelect">'+dmOptions()+'</select><button id="dmPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇 DM</button></div>'+
       '<div class="field"><label>選擇團隊</label><select id="teamSelect">'+teamOptions()+'</select><button id="teamPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇團隊</button></div>'+
       '<div class="field"><label>選擇業務聯絡資訊</label><select id="contactSelect">'+contactOptions()+'</select><small>資料來自雲端通訊錄；形象照、QR Code 與經紀人由後台依團隊綁定。</small><button id="contactPickerBtn" class="btn line full line-fallback-btn" type="button">手機備用：選擇業務</button></div>'+
       '<div class="mini-contact"><div><strong>'+escapeHtml(c?(c.name||'未命名'):'尚未選擇')+'</strong><span>'+escapeHtml(c?(c.title||''):'')+'</span><p>'+escapeHtml(c?(c.phone||''):'')+'<br>'+escapeHtml(c?getTeamName(c):'')+'</p><p class="mini-broker">經紀人：'+escapeHtml(broker?(broker.name||'未命名經紀人'):'依團隊自動套入')+(broker&&broker.license_no?'｜'+escapeHtml(broker.license_no):'')+'</p></div><div class="mini-assets">'+
@@ -145,6 +148,12 @@ function escapeHtml(v){return String(v||'').replace(/[&<>"']/g,function(m){retur
   function logsHtml(){return '<section class="card"><h2>紀錄</h2><div class="log-list">'+(user?(logs.length?logs.map(function(l){return '<div>'+new Date(l.created_at).toLocaleString()+'｜'+escapeHtml(l.action)+'｜'+escapeHtml(l.detail||'')+'</div>';}).join(''):'尚無紀錄'):'請先登入後台查看紀錄。')+'</div></section>';}
 
   function bindPage(){
+    var month=document.getElementById('monthSelect');
+    if(month){
+      month.onchange=function(){selectMonth(this.value);};
+      month.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openMonthPicker();}},{passive:false});
+      document.getElementById('monthPickerBtn').onclick=openMonthPicker;
+    }
     var el; document.body.classList.toggle('line-browser',isLineBrowser()); document.body.classList.toggle('mobile-browser',isMobileBrowser());
     if((el=document.getElementById('dmSelect'))){el.onchange=function(){selectedDm=this.value;render();renderCanvas();};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇 DM',pickerItemsFromDms(),function(v){selectedDm=v;render();setTimeout(renderCanvas,50);});}},{passive:false});}
     if((el=document.getElementById('teamSelect'))){el.onchange=function(){selectedTeam=this.value;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);};el.addEventListener('touchstart',function(e){if(isLineBrowser()){e.preventDefault();openPicker('選擇團隊',pickerItemsFromTeams(),function(v){selectedTeam=v;ensureSelectedContactInTeam();ensureSelectedBrokerInTeam();render();setTimeout(renderCanvas,50);});}},{passive:false});}
@@ -237,7 +246,27 @@ function openPicker(title,items,onSelect){
     modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
     modal.querySelectorAll('.line-picker-item').forEach(function(btn){btn.onclick=function(){var v=btn.getAttribute('data-value')||'';modal.remove();onSelect(v);};});
   }
-  function pickerItemsFromDms(){return dms.map(function(d){return {value:d.id,label:d.name||'未命名 DM'};});}
+  function dmMonths(){return Array.from(new Set(dms.map(function(d){return d.category;}).filter(function(m){return /^\d{4}-\d{2}$/.test(m);}))).sort().reverse();}
+  function monthLabel(m){return m.slice(0,4)+' 年 '+Number(m.slice(5))+' 月';}
+  function monthDms(){return selectedMonth?dms.filter(function(d){return d.category===selectedMonth;}):dms;}
+  function selectMonth(m){
+    if(!dmMonths().includes(m))return;
+    selectedMonth=m;
+    selectedDm=monthDms()[0]?.id||'';
+    render();renderCanvas();
+  }
+  function openMonthPicker(){openPicker('選擇月份',dmMonths().map(function(m){return {value:m,label:monthLabel(m)};}),selectMonth);}
+  function dmOptions(){
+    var list=monthDms();
+    if(!selectedMonth)return options(list,selectedDm,'name','請選擇 DM');
+    return ['A','B'].map(function(edition){
+      var items=list.filter(function(d){return d.edition===edition;});
+      return items.length?'<optgroup label="'+(edition==='A'?'A 版 工商物件':'B 版 農地物件')+'">'+items.map(function(d){
+        return '<option value="'+escapeAttr(d.id)+'" '+(d.id===selectedDm?'selected':'')+'>'+escapeHtml(d.name)+'</option>';
+      }).join('')+'</optgroup>':'';
+    }).join('');
+  }
+  function pickerItemsFromDms(){return monthDms().map(function(d){return {value:d.id,label:d.name||'未命名 DM'};});}
   function pickerItemsFromTeams(){var items=[{value:'',label:'全部團隊'}];uniqueTeams().forEach(function(t){items.push({value:t,label:t});});return items;}
   function pickerItemsFromContacts(){return filteredContacts().map(function(c){return {value:c.id,label:(c.name||'未命名')+(c.title?'｜'+c.title:'')+(c.phone?'｜'+c.phone:'')};});}
 
@@ -280,7 +309,7 @@ function options(items,selected,label,empty){return '<option value="">'+empty+'<
     return contacts.find(function(x){return x.id===selectedContact;}) || contacts[0] || null;
   }
 
-  function dmCards(admin){if(!dms.length)return '<div class="empty">尚無 DM</div>';return dms.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt=""><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span>'+(admin&&user?'<div class="field dm-rename-field"><label>DM 名稱</label><input data-dm-name="'+d.id+'" value="'+escapeAttr(d.name||'')+'"><button class="btn line small" data-rename-dm="'+d.id+'" type="button">儲存名稱</button></div>':'')+'<div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
+  function dmCards(admin){var list=admin?dms:monthDms();if(!list.length)return '<div class="empty">尚無 DM</div>';return list.map(function(d){return '<div class="dm-card '+(d.id===selectedDm?'active':'')+'"><img src="'+escapeAttr(d.image_url)+'" alt="" loading="lazy"><h3>'+escapeHtml(d.name)+'</h3><span class="pill">'+escapeHtml(d.category||'DM')+'</span>'+(admin&&user?'<div class="field dm-rename-field"><label>DM 名稱</label><input data-dm-name="'+d.id+'" value="'+escapeAttr(d.name||'')+'"><button class="btn line small" data-rename-dm="'+d.id+'" type="button">儲存名稱</button></div>':'')+'<div class="actions"><button class="btn line" data-select-dm="'+d.id+'">選用</button>'+(admin&&user?'<button class="btn danger" data-delete-dm="'+d.id+'">下架</button>':'')+'</div></div>';}).join('');}
   function contactCards(){
     var visibleContacts = adminFilteredContacts();
     if(!visibleContacts.length) return '<div class="empty">目前篩選條件下沒有通訊錄資料</div>';
