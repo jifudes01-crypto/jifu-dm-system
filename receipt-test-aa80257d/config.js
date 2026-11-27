@@ -1,0 +1,4 @@
+window.JIFU_NOVEMBER={"contacts":[{"id":"receipt-test","name":"手機測試 aa80257d","team":"測試團隊"}],"dms":[{"id":"test-dm","category":"2026-11","edition":"A","name":"下載紀錄測試 DM","image_url":"../november/dm-2026-11-A-1.jpg"}],"brokers":[]};
+window.JIFU_DOWNLOAD_LOG_ENDPOINT="https://script.google.com/macros/s/AKfycbzvZQ9bLQqhABKeKKpw4_Ig1prmCxMZW5y9XfVIru2-9Q4DPKMoLSecs-8wjabKMWVs/exec";
+window.JIFU_DOWNLOAD_LOG_PUBLIC_KEY="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkOH3qBchpZUw+lAu8D2ozyMcN352R4wWUSUB1hLVSdBppvVbPTi+fpvdDyYg8zljy9UxWhThbR8CQ8zdd0bObwZY26kc5uyLx/aBhh1lkKL2mA7iaeJTcEdIIgawgWBc+9h3mcwbO/fptLeJS3onjmcVwrFXUlOOLvJk230cXj0J74zQmDv/GHToBnEOX1iPUabP/NYmxrIuRRrZHMvwcOMiRJOBNmjk+LxVemlMbVcoNcR1jq7tlgCh3t+3H1Uv+bC/OO6d6pg5L+t1rH6dM9aPmVjVd8qpo+jD393NV+i+UDxqclA0zBCCiPEojqwSMfEfTQnUoBYcUYsLUosgQQIDAQAB";
+window.JIFU_DOWNLOAD_LOG_MAILBOX=true;
