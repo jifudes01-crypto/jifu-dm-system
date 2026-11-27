@@ -880,9 +880,34 @@ function drawPortraitCropAdjusted(ctx,img,x,y,w,h,offsetX,offsetY,scaleAdjust){
   }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+var publicDownloadKey;
+async function recordPublicDownloadClick(){
+  var endpoint=window.JIFU_DOWNLOAD_LOG_ENDPOINT;
+  var encryptionKey=window.JIFU_DOWNLOAD_LOG_PUBLIC_KEY;
+  var mailbox=window.JIFU_DOWNLOAD_LOG_MAILBOX===true;
+  if(!window.JIFU_NOVEMBER||typeof endpoint!=='string'||!endpoint.startsWith('https://')||!encryptionKey)return;
+  if(mailbox&&!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint))return;
+  var person=contacts.find(function(c){return c.id===selectedContact;});
+  var dm=dms.find(function(d){return d.id===selectedDm;});
+  if(!person||!dm)return;
+  try{
+    var payload=new TextEncoder().encode(JSON.stringify({
+      eventId:crypto.randomUUID(),person:person.name,team:person.team||person.company,dm:dm.name,time:new Date().toISOString()
+    }));
+    var encode=function(bytes){return btoa(String.fromCharCode.apply(null,new Uint8Array(bytes)));};
+    var nonce=crypto.getRandomValues(new Uint8Array(12));
+    publicDownloadKey=publicDownloadKey||crypto.subtle.importKey('spki',Uint8Array.from(atob(encryptionKey),function(ch){return ch.charCodeAt(0);}),{name:'RSA-OAEP',hash:'SHA-256'},false,['wrapKey']);
+    var key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt']);
+    var encrypted=await Promise.all([crypto.subtle.wrapKey('raw',key,await publicDownloadKey,'RSA-OAEP'),crypto.subtle.encrypt({name:'AES-GCM',iv:nonce},key,payload)]);
+    await fetch(endpoint,{method:'POST',mode:mailbox?'no-cors':'cors',credentials:'omit',keepalive:true,headers:{'Content-Type':mailbox?'text/plain;charset=UTF-8':'application/json'},body:JSON.stringify({
+      key:encode(encrypted[0]),nonce:encode(nonce),data:encode(encrypted[1])
+    })});
+  }catch(_){}
+}
 async function downloadCanvas(){
     var canvas=document.getElementById('dmCanvas');
     if(!canvas)return notice('找不到預覽圖，請先更新預覽。');
+    recordPublicDownloadClick();
 
     if(!await renderCanvas())return;
 
